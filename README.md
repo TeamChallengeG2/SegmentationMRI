@@ -20,12 +20,15 @@
 WIP
 
 ## Folder Structure
+```
 VolumeSegmentationTC2/
 ├───config.json - holds configuration for training, validation and testing
 ├───main.py - main script to run training
 ├───train.py - class for training
 │
 ├───data/ - folder for DICOM data files wrapped in .zip
+|   ├── EBSx/ - contains scans children 8 - 10
+|   └── Volunteer X/ - contains scans volunteers
 │
 ├───dataloader/ - code concerning dataloading 
 │   └── datasets.py - class for loading and preprocessing of data
@@ -40,4 +43,4 @@ VolumeSegmentationTC2/
 │
 └───utils/ - utility methods 
     └── utils.py
-
+```

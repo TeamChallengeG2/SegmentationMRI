@@ -1,7 +1,7 @@
 {
     "dataloader": {
         "data_dir": "data\\",
-        "normalize": true,
+        "normalize": false,
         "extension": ".zip",
         "extension_data": ".dcm"
     },

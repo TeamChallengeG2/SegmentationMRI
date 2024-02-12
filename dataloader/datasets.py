@@ -18,6 +18,8 @@ import glob
 import scienceplots
 import matplotlib.pyplot as plt
 import SimpleITK as sitk
+import zipfile
+import pydicom
 from matplotlib.widgets import Button, Slider
 
 class Dataset(Dataset):
@@ -54,14 +56,20 @@ class Dataset(Dataset):
 
         """
         file_list = glob.glob(data_dir + "*")
-        data = []
+        # data = []
+        # for file_path in file_list:
+        #     file_name = file_path.split("\\")[1]
+        #     data.append([file_path + "\\" + file_name + self.extension,
+        #                  file_path + "\\" + file_name + "_seg" + self.extension])
+        #     # data.append([file_path + "\\" + file_name + ".dcm",
+        #     #              file_path + "\\" + file_name + ".dcm"])
+        # print(f"Total of {len(data)} images found.")
+        data = list()
         for file_path in file_list:
-            file_name = file_path.split("\\")[1]
-            data.append([file_path + "\\" + file_name + self.extension,
-                         file_path + "\\" + file_name + "_seg" + self.extension])
-            # data.append([file_path + "\\" + file_name + ".dcm",
-            #              file_path + "\\" + file_name + ".dcm"])
-        print(f"Total of {len(data)} images found.")
+            file_name_original = glob.glob(file_path+"/"+"*.zip")[0]
+            #need to change the format of label file (original image and label should be in the same path for each patient)
+            file_name_label= glob.glob(file_path+"/"+"*.zip")[0] # segmentation mask
+            data.append([file_name_original,file_name_label])
         return data
     
     def __len__(self):
@@ -93,8 +101,8 @@ class Dataset(Dataset):
     
         if index >= len(self.data_paths):
             index = (index - len(self.data_paths)) % len(self.data_paths)
-
-        img, mask = map(self.path_to_tensor, self.data_paths[index])
+                
+        img, mask = self.path_to_tensor(self.data_paths[index])
         
         if transform is not None:
             torch.manual_seed(self.seed + index)
@@ -110,7 +118,7 @@ class Dataset(Dataset):
         # print(f"Transform: {transform}")
         # print(f"Index true: {index}")
             
-        return img[40,:,:], mask[40,:,:]
+        return img, mask
     
     def collate_fn(self, batch):
         """Collate (collect and combine) function for varying input size."""
@@ -130,19 +138,37 @@ class Dataset(Dataset):
         tensor_data : Tensor
             Tensor object of torch module containing image data.
 
-        """       
-        match self.extension:
-            case ".nii.gz": 
-                img = nib.load(file_name)
-                data = img.get_fdata()
-                tensor_data = v2.ToImageTensor()(data)
-                tensor_data = v2.ToDtype(torch.float32)(tensor_data)
-            case ".dcm":
-                img = sitk.ReadImage(file_name)
-                data = sitk.GetArrayFromImage(img)
-                tensor_data = torch.as_tensor(data, dtype=torch.float32).squeeze()
+        """
+        output = list()
+        with zipfile.ZipFile(file_name[0],'r') as zipf:
+            img_data = list()
+            zipf.extractall()
+            ls= zipf.infolist()
+            instance_numbers = list()
+            for i, slice in enumerate(ls):
+                slice_data = pydicom.read_file(slice.filename)
+                if "DICOM" in zipf.namelist()[i]:
+                    instance_numbers.append(slice_data[0x20,0x13].value)
+                    img_data.append(slice_data.pixel_array)
+            instance_numbers = list(map(int, instance_numbers))
+            img_data = [x for y, x in sorted(zip(instance_numbers, img_data))]
+            img_data = np.stack(img_data).astype('float32')
 
-        return tensor_data
+        with zipfile.ZipFile(file_name[1],'r') as zipf:
+            mask_data = list()
+            zipf.extractall()
+            ls= zipf.infolist()
+            instance_numbers = list()
+            for i, slice in enumerate(ls):
+                slice_data = pydicom.read_file(slice.filename)
+                if "DICOM" in zipf.namelist()[i]:
+                    instance_numbers.append(slice_data[0x20,0x13].value)
+                    mask_data.append(slice_data.pixel_array)
+            instance_numbers = list(map(int, instance_numbers))
+            mask_data = [x for y, x in sorted(zip(instance_numbers, mask_data))]
+            mask_data = np.stack(mask_data).astype('float32')
+            
+        return torch.from_numpy(img_data), torch.from_numpy(mask_data)
     
     def augment_all(self, transform):
         """
@@ -170,9 +196,9 @@ class Dataset(Dataset):
         fig, axes = plt.subplots(2, 1)
         plt.setp(plt.gcf().get_axes(), xticks=[], yticks=[]);
         plt.rcParams["font.family"] = "Arial"
-        axes[0].imshow(img[slice], cmap='gray')
+        axes[0].imshow(img[12,:,:], cmap='gray')
         axes[0].title.set_text(f"Image {index}")
-        axes[1].imshow(mask[slice], cmap='rainbow', alpha=0.5)
+        axes[1].imshow(mask[12,:,:], cmap='rainbow', alpha=0.5)
         axes[1].title.set_text(f"Mask {index}")
         plt.subplots_adjust(hspace=0.3)
         plt.show()

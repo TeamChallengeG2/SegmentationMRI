@@ -10,8 +10,9 @@ Utrecht University & University of Technology Eindhoven
 """ 
 
 # %% Import libraries
+
 from model.UNet import UNet
-from utils import load_config
+from utils import load_config, plot_overlay
 from dataloader import Dataset
 from torchvision.transforms import v2
 from torch.utils.data import DataLoader, random_split
@@ -22,8 +23,7 @@ import torch
 print(torch.__version__) 
 print(torch.cuda.is_available())
 
-
-# %% Main
+# % Main
 if __name__ == "__main__":  # must be enabled for num_workers > 0
     config = load_config("config.json")
     dataset = Dataset(config)
@@ -33,6 +33,7 @@ if __name__ == "__main__":  # must be enabled for num_workers > 0
                                                 lengths=[0.7,0.1,0.2], 
                                                 generator=torch.Generator().manual_seed(42))
     
+    plot_overlay(dataset[0][0], dataset[0][1])
     # train_loader = DataLoader(dataset=train_set, 
     #                         batch_size=config["trainer"]["batch_size"],
     #                         collate_fn=lambda batch : batch,
@@ -61,3 +62,4 @@ if __name__ == "__main__":  # must be enabled for num_workers > 0
 #%% 
 # model = UNet()
 # tester = Tester(model, test_loader)
+# %%

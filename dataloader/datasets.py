@@ -18,8 +18,8 @@ import glob
 import scienceplots
 import matplotlib.pyplot as plt
 import SimpleITK as sitk
-import zipfile
-import pydicom
+import nrrd
+
 from matplotlib.widgets import Button, Slider
 
 class Dataset(Dataset):
@@ -40,6 +40,7 @@ class Dataset(Dataset):
         self.transforms = [None]
         self.seed = np.random.randint(2147483647) 
         
+        
     def dir_to_list(self, data_dir):
         """
         Retrieves path from data directory and returns as list of [img, mask].
@@ -47,7 +48,7 @@ class Dataset(Dataset):
         Parameters
         ----------
         data_dir : String
-            Directory path to image data.
+            Directory path to image data from root, i.e., "/data/"
 
         Returns
         -------
@@ -56,20 +57,11 @@ class Dataset(Dataset):
 
         """
         file_list = glob.glob(data_dir + "*")
-        # data = []
-        # for file_path in file_list:
-        #     file_name = file_path.split("\\")[1]
-        #     data.append([file_path + "\\" + file_name + self.extension,
-        #                  file_path + "\\" + file_name + "_seg" + self.extension])
-        #     # data.append([file_path + "\\" + file_name + ".dcm",
-        #     #              file_path + "\\" + file_name + ".dcm"])
-        # print(f"Total of {len(data)} images found.")
         data = list()
         for file_path in file_list:
-            file_name_original = glob.glob(file_path+"/"+"*.zip")[0]
-            #need to change the format of label file (original image and label should be in the same path for each patient)
-            file_name_label= glob.glob(file_path+"/"+"*.zip")[0] # segmentation mask
-            data.append([file_name_original,file_name_label])
+            img_path = glob.glob(file_path + "/*" + self.extension)[0]
+            mask_path = glob.glob(file_path + "/*.seg" + self.extension)[0] # segmentation mask
+            data.append([img_path, mask_path])
         return data
     
     def __len__(self):
@@ -89,9 +81,9 @@ class Dataset(Dataset):
         Returns
         -------
         img
-            Torch image tensor.
+            Torch image tensor. LPS coordinate system.
         mask
-            Torch mask tensor.
+            Torch mask tensor. LPS coordinate system.
             
         """
         assert index < self.length, \
@@ -126,12 +118,12 @@ class Dataset(Dataset):
     
     def path_to_tensor(self, file_name):
         """
-        Extracts tensor data from .dcm or .nii.gz files
+        Extracts torch array data from .nrrd files given a list of one image and one mask path.
 
         Parameters
         ----------
-        filename : string
-            Path to .dcm or .nii.gz file.
+        file_name : list
+            List of string path to image and mask, i.e., [img_path, mask_path]
 
         Returns
         -------
@@ -139,36 +131,10 @@ class Dataset(Dataset):
             Tensor object of torch module containing image data.
 
         """
-        output = list()
-        with zipfile.ZipFile(file_name[0],'r') as zipf:
-            img_data = list()
-            zipf.extractall()
-            ls= zipf.infolist()
-            instance_numbers = list()
-            for i, slice in enumerate(ls):
-                slice_data = pydicom.read_file(slice.filename)
-                if "DICOM" in zipf.namelist()[i]:
-                    instance_numbers.append(slice_data[0x20,0x13].value)
-                    img_data.append(slice_data.pixel_array)
-            instance_numbers = list(map(int, instance_numbers))
-            img_data = [x for y, x in sorted(zip(instance_numbers, img_data))]
-            img_data = np.stack(img_data).astype('float32')
+        img, header = nrrd.read(file_name[0])
+        mask, _ = nrrd.read(file_name[1])
 
-        with zipfile.ZipFile(file_name[1],'r') as zipf:
-            mask_data = list()
-            zipf.extractall()
-            ls= zipf.infolist()
-            instance_numbers = list()
-            for i, slice in enumerate(ls):
-                slice_data = pydicom.read_file(slice.filename)
-                if "DICOM" in zipf.namelist()[i]:
-                    instance_numbers.append(slice_data[0x20,0x13].value)
-                    mask_data.append(slice_data.pixel_array)
-            instance_numbers = list(map(int, instance_numbers))
-            mask_data = [x for y, x in sorted(zip(instance_numbers, mask_data))]
-            mask_data = np.stack(mask_data).astype('float32')
-            
-        return torch.from_numpy(img_data), torch.from_numpy(mask_data)
+        return torch.from_numpy(img), torch.from_numpy(mask)
     
     def augment_all(self, transform):
         """
@@ -188,17 +154,17 @@ class Dataset(Dataset):
         self.transforms.append(transform)
         print(f"Total images: {self.length}")
     
-    def plot(self, index, slice=(slice(None), slice(None))):
+    def plot(self, index, slice_z=12):
         
         """Plot image data and mask."""
         img, mask = self.__getitem__(index)
         plt.style.use(['science','ieee', 'no-latex'])
         fig, axes = plt.subplots(2, 1)
-        plt.setp(plt.gcf().get_axes(), xticks=[], yticks=[]);
+        plt.setp(plt.gcf().get_axes(), xticks=[], yticks=[])
         plt.rcParams["font.family"] = "Arial"
-        axes[0].imshow(img[12,:,:], cmap='gray')
+        axes[0].imshow(img[slice(None), slice(None), slice_z], cmap='gray')
         axes[0].title.set_text(f"Image {index}")
-        axes[1].imshow(mask[12,:,:], cmap='rainbow', alpha=0.5)
+        axes[1].imshow(mask[slice(None), slice(None), slice_z], cmap='rainbow', alpha=0.5)
         axes[1].title.set_text(f"Mask {index}")
         plt.subplots_adjust(hspace=0.3)
         plt.show()

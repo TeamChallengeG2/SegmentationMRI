@@ -11,7 +11,8 @@ Utrecht University & University of Technology Eindhoven
 
 # %% Import libraries
 
-from model.UNet import UNet
+# from model.UNet import UNet
+from model.UNet3D import UNet
 from utils import load_config, plot_overlay
 from dataloader import Dataset
 from torchvision.transforms import v2
@@ -34,30 +35,31 @@ if __name__ == "__main__":  # must be enabled for num_workers > 0
                                                 generator=torch.Generator().manual_seed(42))
     
     plot_overlay(dataset[0][0], dataset[0][1])
-    # train_loader = DataLoader(dataset=train_set, 
-    #                         batch_size=config["trainer"]["batch_size"],
-    #                         collate_fn=lambda batch : batch,
-    #                         )
+    train_loader = DataLoader(dataset=train_set, 
+                            batch_size=config["trainer"]["batch_size"],
+                            collate_fn=lambda batch : batch,
+                            )
     
-    # val_loader = DataLoader(dataset=val_set, 
-    #                         batch_size=1,
-    #                         collate_fn=dataset.collate_fn,
-    #                         )
-    
-    # test_loader = DataLoader(dataset=test_set, 
-    #                         batch_size=1,
-    #                         collate_fn=dataset.collate_fn,
-    #                         )
-    
-    # model = UNet()
-    # myLogger = Logger(config=config, save=True)
-    # trainer = Trainer(model=model, 
-    #                 train_loader=train_loader, 
-    #                 val_loader=val_loader, 
-    #                 config=config, 
-    #                 logger=myLogger)
+    val_loader = DataLoader(dataset=val_set, 
 
-    # trainer.train()
+                            batch_size=1,
+                            collate_fn=dataset.collate_fn,
+                            )
+    
+    test_loader = DataLoader(dataset=test_set, 
+                            batch_size=1,
+                            collate_fn=dataset.collate_fn,
+                            )
+    
+    model = UNet()
+    myLogger = Logger(config=config, save=True)
+    trainer = Trainer(model=model, 
+                    train_loader=train_loader, 
+                    val_loader=val_loader, 
+                    config=config, 
+                    logger=myLogger)
+
+    trainer.train()
     
 #%% 
 # model = UNet()

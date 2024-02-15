@@ -31,7 +31,7 @@ def write_config(content, fname):
     with fname.open('wt') as handle:
         json.dump(content, handle, indent=4, sort_keys=False)
 
-def plot_overlay(img, mask, color_overlay=[(255, 0, 0)], slice_z=12, save=False):
+def plot_overlay(img, mask, color_overlay=[(255, 0, 0)], slice_z=10, save=False):
     """
     Plots segmentation mask and border over an image.
 
@@ -58,7 +58,7 @@ def plot_overlay(img, mask, color_overlay=[(255, 0, 0)], slice_z=12, save=False)
     output = segmentation.mark_boundaries(overlay, mask, mode='inner', color=color_overlay)
     fig, axes = plt.subplots(1, 1)
     plt.setp(plt.gcf().get_axes(), xticks=[], yticks=[])
-    plt.imshow(np.clip(output[:,:,slice_z,:], 0, 1))
+    plt.imshow(np.rot90(np.clip(output[:,:,slice_z,:], 0, 1), 3))
     if save is not False:
         plt.savefig(f"{save}/plot.png")
     plt.show()

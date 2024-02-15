@@ -12,7 +12,7 @@ Utrecht University & University of Technology Eindhoven
 # %% Import libraries
 
 # from model.UNet import UNet
-from model.UNet3D import UNet
+from model.UNet3D import UNet3D
 from utils import load_config, plot_overlay
 from dataloader import Dataset
 from torchvision.transforms import v2
@@ -28,13 +28,14 @@ print(torch.cuda.is_available())
 if __name__ == "__main__":  # must be enabled for num_workers > 0
     config = load_config("config.json")
     dataset = Dataset(config)
-    dataset.augment_all(v2.RandomRotation(30)) 
+    # dataset.augment_all(v2.RandomRotation(30)) 
     # dataset.augment_all(v2.RandomAffine(degrees=0, translate=(0.1, 0.1))) 
     train_set, val_set, test_set = random_split(dataset=dataset,
                                                 lengths=[0.7,0.1,0.2], 
                                                 generator=torch.Generator().manual_seed(42))
-    
+
     plot_overlay(dataset[0][0], dataset[0][1])
+
     train_loader = DataLoader(dataset=train_set, 
                             batch_size=config["trainer"]["batch_size"],
                             collate_fn=lambda batch : batch,
@@ -51,13 +52,14 @@ if __name__ == "__main__":  # must be enabled for num_workers > 0
                             collate_fn=dataset.collate_fn,
                             )
     
-    model = UNet()
+    model = UNet3D(in_channels=1, num_classes=2)
     myLogger = Logger(config=config, save=True)
     trainer = Trainer(model=model, 
                     train_loader=train_loader, 
                     val_loader=val_loader, 
                     config=config, 
                     logger=myLogger)
+    
 
     trainer.train()
     

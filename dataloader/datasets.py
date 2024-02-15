@@ -19,6 +19,7 @@ import scienceplots
 import matplotlib.pyplot as plt
 import SimpleITK as sitk
 import nrrd
+import slicerio
 
 from matplotlib.widgets import Button, Slider
 
@@ -119,6 +120,7 @@ class Dataset(Dataset):
     def path_to_tensor(self, file_name):
         """
         Extracts torch array data from .nrrd files given a list of one image and one mask path.
+        Additionally, sets volume label to 1, and background to 0.
 
         Parameters
         ----------
@@ -131,10 +133,15 @@ class Dataset(Dataset):
             Tensor object of torch module containing image data.
 
         """
-        img, header = nrrd.read(file_name[0])
-        mask, _ = nrrd.read(file_name[1])
-
-        return torch.from_numpy(img), torch.from_numpy(mask)
+        img, _ = nrrd.read(file_name[0])
+        # mask, _ = nrrd.read(file_name[1])
+        segmentation_info = slicerio.read_segmentation_info(file_name[1])
+        segment_names_to_labels = [("Background", 0), ("Volume", 1)]
+        mask, mask_header = nrrd.read(file_name[1])
+        mask, _ = slicerio.extract_segments(mask, mask_header, segmentation_info, segment_names_to_labels)
+        # img = np.transpose(img, (2, 0, 1))
+        # mask = np.transpose(mask, (2, 0, 1))
+        return torch.from_numpy(img).float(), torch.from_numpy(mask).float()
     
     def augment_all(self, transform):
         """
@@ -154,7 +161,7 @@ class Dataset(Dataset):
         self.transforms.append(transform)
         print(f"Total images: {self.length}")
     
-    def plot(self, index, slice_z=12):
+    def plot(self, index, slice_z=10):
         
         """Plot image data and mask."""
         img, mask = self.__getitem__(index)

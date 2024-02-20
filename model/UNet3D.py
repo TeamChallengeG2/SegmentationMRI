@@ -168,6 +168,7 @@ class UpConv3DBlock(nn.Module):
         super(UpConv3DBlock, self).__init__()
         assert (last_layer==False and num_classes==None) or (last_layer==True and num_classes!=None), 'Invalid arguments'
         self.upconv1 = nn.ConvTranspose3d(in_channels=in_channels, out_channels=in_channels, kernel_size=(2, 2, 2), stride=2)
+        self.upconv1 = nn.Upsample()
         self.relu = nn.ReLU()
         self.bn = nn.BatchNorm3d(num_features=in_channels//2)
         self.conv1 = nn.Conv3d(in_channels=in_channels+res_channels, out_channels=in_channels//2, kernel_size=(3,3,3), padding=(1,1,1))

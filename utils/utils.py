@@ -31,40 +31,34 @@ def write_config(content, fname):
     with fname.open('wt') as handle:
         json.dump(content, handle, indent=4, sort_keys=False)
 
-def plot_overlay(img, mask, color_overlay=[(255, 0, 0)], slice_z=10, save=False):
-    """
-    Plots segmentation mask and border over an image.
+def plot_overlay(image, mask, slice=10):
+        """
+        Plots segmentation mask over an image.
 
-    Parameters
-    ----------
-    img : numpy.ndarray or torch.Tensor
-        image
-    mask : numpy.ndarray or torch.Tensor
-        mask
-    color_overlay : List of tuples
-        The colors that are used as overlay. 
+        Parameters
+        ----------
+        image : numpy.ndarray or torch.Tensor
+            image
+        mask : numpy.ndarray or torch.Tensor
+            mask
+        slice : int
 
-    Returns
-    -------
-    None.
+        Returns
+        -------
+        None.
 
-    """
-    img -= torch.min(img)
-    img /= torch.max(img)
-    img = img.numpy()
-    mask = mask.numpy()
+        """
+        overlay = np.ma.masked_where(mask == 0, mask)
+        fig, axs = plt.subplots(1, 3)
+        axs[0].imshow(np.rot90(image[:,:,slice], 3), cmap="gray")
+        axs[1].imshow(np.rot90(mask[:,:,slice], 3), cmap="gray")
+        axs[2].imshow(np.rot90(image[:,:,slice], 3), cmap="gray")
+        axs[2].imshow(np.rot90(overlay[:,:,slice], 3), cmap="prism", alpha=0.4)
+        titles = ["Image", "Mask", "Overlay"]
 
-    overlay = color.label2rgb(mask, img, colors=color_overlay, alpha=0.005, bg_label=0, bg_color=None)
-    output = segmentation.mark_boundaries(overlay, mask, mode='inner', color=color_overlay)
-    fig, axes = plt.subplots(1, 1)
-    plt.setp(plt.gcf().get_axes(), xticks=[], yticks=[])
-    plt.imshow(np.rot90(np.clip(output[:,:,slice_z,:], 0, 1), 3))
-    if save is not False:
-        plt.savefig(f"{save}/plot.png")
-    plt.show()
+        for ax, title in zip(axs, titles):
+            ax.set_title(title)
+            ax.axis("off")
 
-def _rainbow_colors(num_colors):
-    hues = np.linspace(0, 1, num_colors)
-    colors = [(int(r * 255), int(g * 255), int(b * 255)) for r, g, b in map(lambda h: colorsys.hsv_to_rgb(h, 1.0, 1.0), hues)]
-    return colors    
-# %%
+        plt.tight_layout()
+        plt.show()

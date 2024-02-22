@@ -14,6 +14,7 @@ import torch.nn as nn
 import torch
 import tkinter as tk
 import matplotlib.pyplot as plt
+import time
 from tkinter import filedialog
 from tqdm import tqdm
 
@@ -34,19 +35,22 @@ class Trainer():
 
     def train(self):
         """Training of model"""
+        visualization_img, _ = next(iter(self.train_loader))
+        training_start_time = time.time()
         for epoch in range(1, self.config["epochs"] + 1):
             self.model.train() 
             loss_train_epoch = self._run_epoch(epoch, self.train_loader)
             self.model.eval()
             loss_val_epoch = self._run_epoch(epoch, self.val_loader)              
             print(f"Train loss: {loss_train_epoch:.4f} | Validation loss: {loss_val_epoch:.4f}")
-            self.logger.append_train_loss(loss_train_epoch.detach().cpu())
-            self.logger.append_val_loss(loss_val_epoch.detach().cpu())
+            self.logger.append_train_loss(loss_train_epoch.detach().cpu().item())
+            self.logger.append_val_loss(loss_val_epoch.detach().cpu().item())
             self.logger.plot(epoch)
-            img, _ = next(iter(self.train_loader))
-            self.visualize(self.model, img, epoch)
+            self.visualize(self.model, visualization_img, epoch)
             if self.logger.save:
                 self.logger.save_weights(self.model)
+        print('Training finished, took {:.2f}s'.format(time.time() - training_start_time))
+        self.logger.save_loss()
            
 
     def _run_epoch(self, epoch, loader):
@@ -64,13 +68,12 @@ class Trainer():
                 loss = self.loss_fn(prediction, mask.long())
                 """Loss input: (batch,C,h,w) and (batch,h,w):target with class VALUES"""
                 if self.model.training:
-                    loss_data_list.append(loss.cpu().detach())
+                    loss_data_list.append(loss.cpu().detach().item())
                     loss.backward() # backward pass based on training of 1 batch        
                     self.optimizer.step() # update weight
                 loss_epoch_list.append(loss.cpu().detach())
-        # if self.model.training:
-            # self.logger.append_data_loss(torch.stack(loss_data_list).cpu().detach().numpy())
-            # self.visualize(self.model, img, epoch)
+        if self.model.training:
+            self.logger.append_data_loss(loss_data_list)
         del img, mask
         return sum(loss_epoch_list) / len(loss_epoch_list) # average loss 1 epoch
     

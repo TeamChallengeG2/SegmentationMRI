@@ -67,7 +67,7 @@ class Dataset(Dataset):
             img_path = glob.glob(file_path + "/*" + self.extension)[0]
             mask_path = glob.glob(file_path + "/*.seg" + self.extension)[0] # segmentation mask
             data.append([img_path, mask_path])
-        return data[0:10]
+        return data
         
     def __len__(self):
         return self.length
@@ -153,6 +153,7 @@ class Dataset(Dataset):
         mask, _ = slicerio.extract_segments(mask, mask_header, segmentation_info, segment_names_to_labels)
         # img = np.transpose(img, (2, 0, 1))
         # mask = np.transpose(mask, (2, 0, 1))
+        print(file_name[0])
         return torch.from_numpy(img).float(), torch.from_numpy(mask).float()
     
     def augment_all(self, transform):

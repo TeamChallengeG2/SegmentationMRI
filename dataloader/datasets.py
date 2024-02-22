@@ -11,6 +11,8 @@ Utrecht University & University of Technology Eindhoven
 
 from torch.utils.data import Dataset
 from torchvision.transforms import v2
+from matplotlib.widgets import Button, Slider
+from scipy.ndimage import zoom
 import nibabel as nib
 import torch
 import numpy as np
@@ -21,7 +23,7 @@ import SimpleITK as sitk
 import nrrd
 import slicerio
 
-from matplotlib.widgets import Button, Slider
+
 
 class Dataset(Dataset):
     """
@@ -36,6 +38,8 @@ class Dataset(Dataset):
         data_dir = config["dataloader"]["data_dir"]
         self.extension = config["dataloader"]["extension"]
         self.normalize = config["dataloader"]["normalize"]
+        self.LP_dimension = config["dataloader"]["LP_dimension"]
+        self.S_dimension = config["dataloader"]["S_dimension"]
         self.data_paths = self.dir_to_list(data_dir)
         self.length = len(self.data_paths)
         self.transforms = [None]
@@ -63,8 +67,8 @@ class Dataset(Dataset):
             img_path = glob.glob(file_path + "/*" + self.extension)[0]
             mask_path = glob.glob(file_path + "/*.seg" + self.extension)[0] # segmentation mask
             data.append([img_path, mask_path])
-        return data
-    
+        return data[0:10]
+        
     def __len__(self):
         return self.length
 
@@ -87,8 +91,9 @@ class Dataset(Dataset):
             Torch mask tensor. LPS coordinate system.
             
         """
-        assert index < self.length, \
+        if index >= self.length:
             f"index should be smaller than {self.length}"
+            raise IndexError(f"index should be smaller than {self.length}")
         index_transforms = index // len(self.data_paths)
         transform = self.transforms[index_transforms]
     
@@ -96,7 +101,8 @@ class Dataset(Dataset):
             index = (index - len(self.data_paths)) % len(self.data_paths)
                 
         img, mask = self.path_to_tensor(self.data_paths[index])
-        
+        img, mask = self.resample(img, mask)
+
         if transform is not None:
             torch.manual_seed(self.seed + index)
             state = torch.get_rng_state()
@@ -113,6 +119,12 @@ class Dataset(Dataset):
             
         return img, mask
     
+    def resample(self, img, mask):
+        img = zoom(input=img, zoom=(160/img.shape[0], 160/img.shape[0], 16/img.shape[-1]))
+        mask = zoom(input=mask, zoom=(160/mask.shape[0], 160/mask.shape[0], 16/mask.shape[-1]), order=0, mode="nearest")
+        return torch.from_numpy(img).float(), torch.from_numpy(mask).float()
+
+
     def collate_fn(self, batch):
         """Collate (collect and combine) function for varying input size."""
         return batch
@@ -176,5 +188,11 @@ class Dataset(Dataset):
         plt.subplots_adjust(hspace=0.3)
         plt.show()
         
+    def get_new_spacings(self, index):
+        file_name = self.data_paths[index]
+        _, h = nrrd.read(file_name[0])
+        LP_spacing = h['sizes'][0]*h['space directions'][0][0] / self.LP_dimension  
+        S_spacing = h['sizes'][2]*h['space directions'][2][2] / self.S_dimension
+        return [LP_spacing, LP_spacing, S_spacing]
             
     

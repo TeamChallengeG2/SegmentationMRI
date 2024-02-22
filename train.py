@@ -13,6 +13,7 @@ import os
 import torch.nn as nn
 import torch
 import tkinter as tk
+import matplotlib.pyplot as plt
 from tkinter import filedialog
 from tqdm import tqdm
 
@@ -42,36 +43,41 @@ class Trainer():
             self.logger.append_train_loss(loss_train_epoch.detach().cpu())
             self.logger.append_val_loss(loss_val_epoch.detach().cpu())
             self.logger.plot(epoch)
-            if self.logger.save:
-                self.logger.save_weights(self.model)
+            img, _ = next(iter(self.train_loader))
+            self.visualize(self.model, img, epoch)
+            # if self.logger.save:
+                # self.logger.save_weights(self.model)
+           
 
     def _run_epoch(self, epoch, loader):
         """Helper function for one single batch training"""
         loss_epoch_list = list()
         loss_data_list = list()
-        with tqdm(loader, unit="batch") as batch:
-            batch.set_description(f"Epoch: {epoch}/{self.epochs}")
-            self.optimizer.zero_grad() # set gradients to 0
-            for data in batch:
-                loss_batch_list = list()
-                for img, mask in data:
-                    img = img.to(self.device)
-                    mask = mask.to(self.device)
-                    prediction = self.model(img.unsqueeze(0).unsqueeze(0)) # forward pass
-                    loss_single = self.loss_fn(prediction, mask.long().unsqueeze(0))
-                    """Loss input: (batch,C,h,w) and (batch,h,w):target with class VALUES"""
-                    loss_batch_list.append(loss_single) # add loss to list
-                    if self.model.training:
-                        loss_data_list.append(loss_single.detach().cpu())
-                loss = sum(loss_batch_list) / len(loss_batch_list) # average loss 1 batch
+        with tqdm(loader, unit="batch") as tepoch:
+            for img, mask in tepoch:
+                tepoch.set_description(f"Epoch: {epoch}/{self.epochs}")
+                self.optimizer.zero_grad() # set gradients to 0           
+                loss_batch_list = list()             
+                img = img.to(self.device)
+                mask = mask.to(self.device)
+                prediction = self.model(img.unsqueeze(0)) # forward pass
+                loss = self.loss_fn(prediction, mask.long())
+                """Loss input: (batch,C,h,w) and (batch,h,w):target with class VALUES"""
                 if self.model.training:
+                    loss_data_list.append(loss.cpu().detach())
                     loss.backward() # backward pass based on training of 1 batch        
                     self.optimizer.step() # update weight
-                loss_epoch_list.append(loss.cpu())
-        if self.model.training:
-            self.logger.append_data_loss(torch.stack(loss_data_list).cpu().detach().numpy())
+                loss_epoch_list.append(loss.cpu().detach())
+        # if self.model.training:
+            # self.logger.append_data_loss(torch.stack(loss_data_list).cpu().detach().numpy())
+            # self.visualize(self.model, img, epoch)
+        del img, mask
         return sum(loss_epoch_list) / len(loss_epoch_list) # average loss 1 epoch
     
+    def visualize(self, model, input, epoch):
+        output = model(input.unsqueeze(0).to(self.device))
+        self.logger.save_fig(output, epoch)
+
 class Tester():
     def __init__(self, model, test_loader):
         filename_pth = self.get_path()

@@ -2,7 +2,9 @@
     "dataloader": {
         "data_dir": "data/",
         "normalize": false,
-        "extension": ".nrrd"
+        "extension": ".nrrd",
+        "LP_dimension": 160,
+        "S_dimension": 16
     },
         
     "trainer": {

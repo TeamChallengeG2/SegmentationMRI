@@ -16,6 +16,7 @@ import scienceplots
 import torch
 from utils import write_config
 
+
 class Logger():
     def __init__(self, config, save):
         self.config = config
@@ -26,6 +27,9 @@ class Logger():
         timestr = time.strftime("%Y%m%d_%H%M%S")
         self.path = f"saved/{timestr}/"
         self.save = save
+        isExist = os.path.exists(self.path)
+        if not isExist:
+            os.makedirs(self.path)
 
     def append_train_loss(self, input):
         self.loss_train_list.append(input)
@@ -65,9 +69,6 @@ class Logger():
         plt.show()
         
     def save_weights(self, model):
-        isExist = os.path.exists(self.path)
-        if not isExist:
-            os.makedirs(self.path)
         torch.save(model.state_dict(), f"{self.path}/weights.pth")
         write_config(self.config, f"{self.path}/config.json")
 
@@ -77,3 +78,9 @@ class Logger():
              "loss_val_list": self.loss_val_list
              }
         write_config(d, f"{self.path}/logs.json")
+
+    def save_fig(self, prediction, epoch):
+        prob = torch.softmax(prediction, dim=1)
+        heatmap = prob[:,1,:,:,10].squeeze().detach().cpu()
+        plt.imshow(heatmap, cmap='hot', interpolation='nearest')
+        plt.savefig(self.path + f"{epoch}.png")

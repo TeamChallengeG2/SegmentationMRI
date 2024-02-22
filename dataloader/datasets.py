@@ -173,20 +173,19 @@ class Dataset(Dataset):
         self.transforms.append(transform)
         print(f"Total images: {self.length}")
     
-    def plot(self, index, slice_z=10):
-        
-        """Plot image data and mask."""
-        img, mask = self.__getitem__(index)
-        plt.style.use(['science','ieee', 'no-latex'])
-        fig, axes = plt.subplots(2, 1)
-        plt.setp(plt.gcf().get_axes(), xticks=[], yticks=[])
-        plt.rcParams["font.family"] = "Arial"
-        axes[0].imshow(img[slice(None), slice(None), slice_z], cmap='gray')
-        axes[0].title.set_text(f"Image {index}")
-        axes[1].imshow(mask[slice(None), slice(None), slice_z], cmap='rainbow', alpha=0.5)
-        axes[1].title.set_text(f"Mask {index}")
-        plt.subplots_adjust(hspace=0.3)
-        plt.show()
+    # def plot(self, index, slice_z=10):      
+    #     """Plot image data and mask."""
+    #     img, mask = self.__getitem__(index)
+    #     plt.style.use(['science','ieee', 'no-latex'])
+    #     fig, axes = plt.subplots(2, 1)
+    #     plt.setp(plt.gcf().get_axes(), xticks=[], yticks=[])
+    #     plt.rcParams["font.family"] = "Arial"
+    #     axes[0].imshow(img[slice(None), slice(None), slice_z], cmap='gray')
+    #     axes[0].title.set_text(f"Image {index}")
+    #     axes[1].imshow(mask[slice(None), slice(None), slice_z], cmap='rainbow', alpha=0.5)
+    #     axes[1].title.set_text(f"Mask {index}")
+    #     plt.subplots_adjust(hspace=0.3)
+    #     plt.show()
         
     def get_new_spacings(self, index):
         file_name = self.data_paths[index]

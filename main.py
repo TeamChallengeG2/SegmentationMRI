@@ -30,7 +30,7 @@ if __name__ == "__main__":  # must be enabled for num_workers > 0
     # dataset.augment_all(v2.RandomRotation(30)) 
     # dataset.augment_all(v2.RandomAffine(degrees=0, translate=(0.1, 0.1))) 
     train_set, val_set, test_set = random_split(dataset=dataset,
-                                                lengths=[0.5,0.4,0.1], 
+                                                lengths=[0.7,0.3,0.0], 
                                                 generator=torch.Generator().manual_seed(42))
 
     # plot_overlay(dataset[0][0], dataset[0][1], slice=10)
@@ -39,7 +39,7 @@ if __name__ == "__main__":  # must be enabled for num_workers > 0
                             batch_size=config["trainer"]["batch_size"]
                             )
     
-    val_loader = DataLoader(dataset=train_set, 
+    val_loader = DataLoader(dataset=val_set, 
                             batch_size=1
                             )
     
@@ -57,3 +57,5 @@ if __name__ == "__main__":  # must be enabled for num_workers > 0
                     logger=myLogger)
     #%%
     trainer.train()
+
+# %%

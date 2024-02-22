@@ -45,8 +45,8 @@ class Trainer():
             self.logger.plot(epoch)
             img, _ = next(iter(self.train_loader))
             self.visualize(self.model, img, epoch)
-            # if self.logger.save:
-                # self.logger.save_weights(self.model)
+            if self.logger.save:
+                self.logger.save_weights(self.model)
            
 
     def _run_epoch(self, epoch, loader):

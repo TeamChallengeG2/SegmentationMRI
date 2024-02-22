@@ -11,9 +11,11 @@ Utrecht University & University of Technology Eindhoven
 
 import time
 import os
+import matplotlib
 import matplotlib.pyplot as plt
 import scienceplots
 import torch
+import numpy as np
 from utils import write_config
 
 
@@ -41,6 +43,7 @@ class Logger():
         self.loss_data_list.append(input)
         
     def plot(self, epoch):
+        matplotlib.use('Agg')
         plt.style.use(['science', 'ieee', 'no-latex'])
         plt.rcParams["font.family"] = "Arial"
         plt.rcParams["axes.edgecolor"] = "black"
@@ -66,7 +69,7 @@ class Logger():
             if not isExist:
                 os.makedirs(plot_path)
             plt.savefig(f"{plot_path}/epoch_{epoch}.png")
-        plt.show()
+        plt.close()    
         
     def save_weights(self, model):
         torch.save(model.state_dict(), f"{self.path}/weights.pth")
@@ -82,5 +85,10 @@ class Logger():
     def save_fig(self, prediction, epoch):
         prob = torch.softmax(prediction, dim=1)
         heatmap = prob[:,1,:,:,10].squeeze().detach().cpu()
-        plt.imshow(heatmap, cmap='hot', interpolation='nearest')
+        matplotlib.use('Agg')
+        plt.figure()        
+        plt.imshow(np.rot90(heatmap, 3), cmap='hot', interpolation='nearest')
+        plt.title(f"Epoch: {epoch}")
+        plt.colorbar()
         plt.savefig(self.path + f"{epoch}.png")
+        plt.close()          

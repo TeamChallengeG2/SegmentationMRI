@@ -106,8 +106,10 @@ class Dataset(Dataset):
         if transform is not None:
             torch.manual_seed(self.seed + index)
             state = torch.get_rng_state()
+            print(img.shape)
             img = transform(img)
             torch.set_rng_state(state)
+            print(mask.shape)
             mask = transform(mask)
             
         if self.normalize:

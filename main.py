@@ -19,7 +19,9 @@ from torchvision.transforms import v2
 from torch.utils.data import DataLoader, random_split
 from train import Trainer, Tester
 from logger import Logger
-import torch 
+import torch
+from utils.transforms import RandomRotate3D
+
 
 print(torch.__version__) 
 print(torch.cuda.is_available())
@@ -27,7 +29,8 @@ print(torch.cuda.is_available())
 if __name__ == "__main__":  # must be enabled for num_workers > 0
     config = load_config("config.json")
     dataset = Dataset(config)
-    # dataset.augment_all(v2.RandomRotation(30)) 
+    dataset.augment_all(RandomRotate3D((-15,15),axes=(0,1)))
+    # dataset.augment_all(v2.RandomRotation(15))
     # dataset.augment_all(v2.RandomAffine(degrees=0, translate=(0.1, 0.1))) 
     train_set, val_set, test_set = random_split(dataset=dataset,
                                                 lengths=[0.6,0.2,0.2], 

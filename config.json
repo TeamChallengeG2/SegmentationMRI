@@ -11,9 +11,14 @@
         "batch_size": 1,
         "collate_fn": "collate_fn",
         "device": "cuda",
-        "epochs": 100,
-        "lr": 0.0075,
+        "epochs": 10,
+        "lr": 0.0005,
         "loss_fn": "CrossEntropyLoss"
-    }
+    },
 
+    "tester": {
+        "batch_size": 1,
+        "collate_fn": "collate_fn",
+        "device": "cuda"
+    }
 }

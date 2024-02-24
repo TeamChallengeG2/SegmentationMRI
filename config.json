@@ -1,7 +1,7 @@
 {
     "dataloader": {
         "data_dir": "data/",
-        "normalize": false,
+        "normalize": true,
         "extension": ".nrrd",
         "LP_dimension": 160,
         "S_dimension": 16
@@ -11,8 +11,8 @@
         "batch_size": 1,
         "collate_fn": "collate_fn",
         "device": "cuda",
-        "epochs": 5,
-        "lr": 0.005,
+        "epochs": 100,
+        "lr": 0.0075,
         "loss_fn": "CrossEntropyLoss"
     }
 

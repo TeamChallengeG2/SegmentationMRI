@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 
 class Trainer():
-    def __init__(self, model, train_loader, val_loader, config, logger):
+    def __init__(self, model, train_loader, val_loader, config, logger, visualize_img):
         self.config = config["trainer"]
         self.device = torch.device(self.config["device"])
         self.batch_size = self.config["batch_size"]
@@ -32,12 +32,13 @@ class Trainer():
         self.logger = logger
         self.optimizer = torch.optim.Adam(params=self.model.parameters(),
                                           lr=self.config["lr"]) 
+        self.visualize_img = visualize_img.unsqueeze(0)
 
     def train(self):
         """Training of model"""
-        visualization_img, _ = next(iter(self.train_loader))
         training_start_time = time.time()
-        for epoch in range(1, self.config["epochs"] + 1):
+        self.logger.make_dir()
+        for epoch in range(0, self.config["epochs"]):
             self.model.train() 
             loss_train_epoch = self._run_epoch(epoch, self.train_loader)
             self.model.eval()
@@ -46,7 +47,7 @@ class Trainer():
             self.logger.append_train_loss(loss_train_epoch.detach().cpu().item())
             self.logger.append_val_loss(loss_val_epoch.detach().cpu().item())
             self.logger.plot(epoch)
-            self.visualize(self.model, visualization_img, epoch)
+            self.visualize(self.model, self.visualize_img, epoch)
             if self.logger.save:
                 self.logger.save_weights(self.model)
         print('Training finished, took {:.2f}s'.format(time.time() - training_start_time))

@@ -22,6 +22,8 @@ import matplotlib.pyplot as plt
 import SimpleITK as sitk
 import nrrd
 import slicerio
+import random
+import scipy
 
 
 
@@ -104,11 +106,17 @@ class Dataset(Dataset):
         img, mask = self.resample(img, mask)
 
         if transform is not None:
-            torch.manual_seed(self.seed + index)
-            state = torch.get_rng_state()
-            img = transform(img)
-            torch.set_rng_state(state)
-            mask = transform(mask)
+            # torch.manual_seed(self.seed + index)
+            # state = torch.get_rng_state()
+            random.seed(index_transforms + index)
+            angle = random.randint(-transform, transform)
+            img = scipy.ndimage.rotate(img, angle, reshape=False)
+            mask = scipy.ndimage.rotate(mask, angle, order=0, mode="nearest", reshape=False)
+            img = torch.from_numpy(img).float()
+            mask = torch.from_numpy(mask).float()
+            # img = transform(img)
+            # torch.set_rng_state(state)
+            # mask = transform(mask)
             
         if self.normalize:
             img -= torch.min(img)
@@ -153,7 +161,6 @@ class Dataset(Dataset):
         mask, _ = slicerio.extract_segments(mask, mask_header, segmentation_info, segment_names_to_labels)
         # img = np.transpose(img, (2, 0, 1))
         # mask = np.transpose(mask, (2, 0, 1))
-        print(file_name[0])
         return torch.from_numpy(img).float(), torch.from_numpy(mask).float()
     
     def augment_all(self, transform):

@@ -26,9 +26,11 @@ class Logger():
         self.loss_data_list = list()
         self.loss_val_list = list()
         self.loss_fn = config["trainer"]["loss_fn"]
-        timestr = time.strftime("%Y%m%d_%H%M%S")
-        self.path = f"saved/{timestr}/"
         self.save = save
+
+    def make_dir(self):
+        timestr = time.strftime("%Y%m%d_%H%M%S")
+        self.path = f"saved/{timestr}/"        
         isExist = os.path.exists(self.path)
         if not isExist:
             os.makedirs(self.path)
@@ -50,14 +52,15 @@ class Logger():
         plt.rcParams["axes.linewidth"] = 2.00
         fig, axes = plt.subplots(1, 1)
         # plt.setp(plt.gcf().get_axes(), xticks=[], yticks=[]);
-        axes.plot(range(1, len(self.loss_train_list) + 1), self.loss_train_list,
-                  "orange", label="Train loss")
-        for xe, ye in zip(range(1, len(self.loss_data_list) + 1), self.loss_data_list):
-                axes.scatter([xe] * len(ye), ye, c="orange", s=1.0)
-        # axes.plot(range(1, len(self.loss_data_list) + 1), ,
-        #           '.', markerfacecolor=(0, 0, 1, 0.3), label="Batch loss")
-        # axes.plot(range(1, len(self.loss_val_list) + 1), self.loss_val_list, 'r', label="Validation loss")
-        plt.xticks(range(1, len(self.loss_train_list) + 1))
+        axes.plot(range(0, len(self.loss_train_list)), self.loss_train_list,
+                  "blue", label="Train loss")
+        for xe, ye in zip(range(0, len(self.loss_data_list)), self.loss_data_list):
+                axes.scatter([xe] * len(ye), ye, c="blue", s=0.1, alpha=0.5)
+        # axes.plot(range(1, len(self.loss_data_list) + 1),
+                #   '.', markerfacecolor=(0, 0, 1, 0.3), label="Batch loss")
+        axes.plot(range(0, len(self.loss_val_list)), self.loss_val_list, 'r-', label="Validation loss")
+        axes.set_ylim([0, 1])
+        plt.xticks(range(0, len(self.loss_train_list), 20))
         # axes.title.set_text(f"{self.loss_fn}")
         plt.ylabel(f"{self.loss_fn}", fontweight='bold')
         plt.xlabel("Epochs", fontweight='bold')
@@ -83,6 +86,7 @@ class Logger():
         write_config(d, f"{self.path}/logs.json")
 
     def save_fig(self, prediction, epoch):
+        # prob = torch.sigmoid(prediction)
         prob = torch.softmax(prediction, dim=1)
         heatmap = prob[:,1,:,:,10].squeeze().detach().cpu()
         matplotlib.use('Agg')

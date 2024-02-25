@@ -23,13 +23,14 @@ import torch
 from utils.transforms import RandomRotate3D
 
 
+
 print(torch.__version__) 
 print(torch.cuda.is_available())
 
 if __name__ == "__main__":  # must be enabled for num_workers > 0
     config = load_config("config.json")
     dataset = Dataset(config)
-    dataset.augment_all(RandomRotate3D((-10,10),axes=(0,1)))
+    # dataset.augment_all(RandomRotate3D((-10,10),axes=(0,1)))
     train_set, val_set, test_set = random_split(dataset=dataset,
                                                 lengths=[0.8,0.2,0], 
                                                 generator=torch.Generator().manual_seed(42))
@@ -45,21 +46,27 @@ if __name__ == "__main__":  # must be enabled for num_workers > 0
                             batch_size=1
                             )
     
-    test_loader = DataLoader(dataset=test_set, 
+    test_loader = DataLoader(dataset=dataset,
                             batch_size=1,
-                            collate_fn=dataset.collate_fn,
                             )
     
     print(len(train_loader), len(val_loader))
+    print(test_loader)
     model = UNet3D(in_channels=1, num_classes=2)
     myLogger = Logger(config=config, save=True)
-    trainer = Trainer(model=model, 
-                    train_loader=train_loader, 
-                    val_loader=val_loader, 
-                    config=config, 
-                    logger=myLogger,
-                    visualize_img=dataset[0][0])
-    #%%
-    trainer.train()
+    # trainer = Trainer(model=model,
+    #                 train_loader=train_loader,
+    #                 val_loader=val_loader,
+    #                 config=config,
+    #                 logger=myLogger,
+    #                 visualize_img=dataset[0][0])
+    # #%%
+    # trainer.train()
+    model.load_state_dict(torch.load(r'C:\Users\ludon\Desktop\team challenge\saved\20240224_202418\weights.pth'))
+    if torch.cuda.is_available():
+        model.cuda()
+    myLogger_test = Logger(config=config, save=True)
+    tester=Tester(model, test_loader,config=config, logger=myLogger_test)
+    tester.test()
 
 # %%

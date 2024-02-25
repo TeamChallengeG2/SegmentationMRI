@@ -42,7 +42,7 @@ class Trainer():
             self.model.train() 
             loss_train_epoch = self._run_epoch(epoch, self.train_loader)
             self.model.eval()
-            loss_val_epoch = self._run_epoch(epoch, self.val_loader)              
+            loss_val_epoch = self._run_epoch(epoch, self.val_loader)
             print(f"Train loss: {loss_train_epoch:.4f} | Validation loss: {loss_val_epoch:.4f}")
             self.logger.append_train_loss(loss_train_epoch.detach().cpu().item())
             self.logger.append_val_loss(loss_val_epoch.detach().cpu().item())
@@ -77,28 +77,76 @@ class Trainer():
             self.logger.append_data_loss(loss_data_list)
         del img, mask
         return sum(loss_epoch_list) / len(loss_epoch_list) # average loss 1 epoch
+
+    # def _run_epoch_val(self, epoch, loader):
+    #     """Helper function for one single batch training"""
+    #     loss_epoch_list = list()
+    #     loss_data_list = list()
+    #     with torch.no_grad():
+    #         with tqdm(loader, unit="batch") as tepoch:
+    #
+    #             for img, mask in tepoch:
+    #                 tepoch.set_description(f"Epoch: {epoch}/{self.epochs}")
+    #                 img = img.to(self.device)
+    #                 mask = mask.to(self.device)
+    #                 prediction = self.model(img.unsqueeze(0))  # forward pass
+    #                 loss = self.loss_fn(prediction, mask.long())
+    #                 """Loss input: (batch,C,h,w) and (batch,h,w):target with class VALUES"""
+    #             loss_epoch_list.append(loss.cpu().detach())
+    #     del img, mask
+    #     return sum(loss_epoch_list) / len(loss_epoch_list)  # average loss 1 epoch
     
     def visualize(self, model, input, epoch):
         output = model(input.unsqueeze(0).to(self.device))
         self.logger.save_fig(output, epoch)
 
 class Tester():
-    def __init__(self, model, test_loader):
-        filename_pth = self.get_path()
-        directory = os.path.dirname(filename_pth)
-        print(directory)
-    
+    def __init__(self, model, test_loader, config, logger):
+        # filename_pth = self.get_path()
+        # directory = os.path.dirname(filename_pth)
+        # print(directory)
+        self.model=model
+        self.loader=test_loader
+        self.config = config["tester"]
+        self.device = torch.device(self.config["device"])
+        self.logger = logger
     def test(self):
-        pass
+        self.model.eval()
+        self.logger.make_dir()
+        self.test_batch(self.loader)
+
+
+    def test_batch(self,loader):
+        with tqdm(loader, unit="batch") as tepoch:
+            print(tepoch)
+            index = 1
+            for img, mask in tepoch:
+                img = img.to(self.device)
+                mask = mask.to(self.device)
+                prediction = self.model(img.unsqueeze(0))
+                prob = torch.softmax(prediction, dim=1)
+                pred_mask = (prob[:, 1, :, :, :] >= 0.5).squeeze().detach().cpu().numpy()
+                self.plot_data(img, prediction, mask, index)# f
+                self.plot_score(index,pred_mask, mask)
+                index += 1
     
-    def test_batch(self):
-        pass
-    
-    def plot_score(self):
-        pass
-    
-    def plot_data(self):
-        pass
+    def plot_score(self,index,prediction,mask):
+        print(f"dice{index}:"+str(self.cal_dice(prediction,mask)))
+        print(f"acc_volume{index}:" + str(self.cal_acc(prediction, mask)))
+
+    def cal_dice(self, pred_mask,mask):
+        mask=mask.detach().cpu().numpy()
+        smooth=1e-5
+        intersection=(pred_mask*mask).sum()
+        return (2.*intersection+smooth)/(pred_mask.sum()+mask.sum()+smooth)
+    def cal_acc(self,pred_mask,mask):
+        mask = mask.detach().cpu().numpy()
+        TP=(pred_mask*mask).sum()
+        return TP/mask.sum()
+
+
+    def plot_data(self,img, prediction, mask, index):
+        self.logger.save_mask_fig(mask,prediction,index)
     
     def get_path(self):
         window = tk.Tk()

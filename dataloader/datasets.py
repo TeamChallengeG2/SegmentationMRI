@@ -106,11 +106,12 @@ class Dataset(Dataset):
         img, mask = self.resample(img, mask)
 
         if transform is not None:
-            torch.manual_seed(self.seed + index)
-            state = torch.get_rng_state()
-            img = transform(img)
-            torch.set_rng_state(state)
-            mask = transform(mask)
+            # torch.manual_seed(self.seed + index)
+            # state = torch.get_rng_state()
+            # img = transform(img)
+            # torch.set_rng_state(state)
+            # mask = transform(mask)
+            img, mask = transform(img, mask, index)
             
         if self.normalize:
             img -= torch.min(img)

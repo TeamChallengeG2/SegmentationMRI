@@ -29,8 +29,10 @@ print(torch.cuda.is_available())
 
 if __name__ == "__main__":  # must be enabled for num_workers > 0
     config = load_config("config.json")
-    dataset = Dataset(config)
-    # dataset.augment_all(RandomRotate3D((-15,15),axes=(0,1)))
+    myLogger = Logger(config=config, save=True)
+    dataset = Dataset(config,myLogger)
+    if config["dataloader"]["transformation"]=="withrotation":
+        dataset.augment_all(RandomRotate3D((-15,15),axes=(0,1)))
     # dataset.augment_all(v2.RandomRotation(15))
     # dataset.augment_all(v2.RandomAffine(degrees=0, translate=(0.1, 0.1))) 
     train_set, val_set, test_set = random_split(dataset=dataset,
@@ -56,15 +58,15 @@ if __name__ == "__main__":  # must be enabled for num_workers > 0
     print(test_loader)
     model = UNet3D(in_channels=1, num_classes=2)
     myLogger = Logger(config=config, save=True)
-    # trainer = Trainer(model=model,
-    #                 train_loader=train_loader,
-    #                 val_loader=val_loader,
-    #                 config=config,
-    #                 logger=myLogger,
-    #                 visualize_img=dataset[0][0])
-    # #%%
+    trainer = Trainer(model=model,
+                    train_loader=train_loader,
+                    val_loader=val_loader,
+                    config=config,
+                    logger=myLogger,
+                    visualize_img=dataset[0][0])
+
     # trainer.train()
-    model.load_state_dict(torch.load(r'C:\Users\ludon\Desktop\team challenge\saved\20240224_202418\weights.pth'))
+    model.load_state_dict(torch.load(r'C:\Users\ludon\Desktop\team challenge\saved\lr0.0005withoutrotation320_16\epoch24_weights.pth'))
     if torch.cuda.is_available():
         model.cuda()
     myLogger_test = Logger(config=config, save=True)

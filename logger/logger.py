@@ -7,7 +7,7 @@ Team Challenge Group 2
 R.E. Buijs, D.M Cornelissen, D. Devetzis, D. Le, J. Zhang
 Utrecht University & University of Technology Eindhoven
 
-""" 
+"""
 
 import time
 import os
@@ -17,6 +17,7 @@ import scienceplots
 import torch
 import numpy as np
 from utils import write_config
+import pandas as pd
 
 
 class Logger():
@@ -27,10 +28,15 @@ class Logger():
         self.loss_val_list = list()
         self.loss_fn = config["trainer"]["loss_fn"]
         self.save = save
+        self.lr=config["trainer"]["lr"]
+        self.transform=config["dataloader"]["transformation"]
+        self.LP=config["dataloader"]["LP_dimension"]
+        self.S=config["dataloader"]["S_dimension"]
 
     def make_dir(self):
-        timestr = time.strftime("%Y%m%d_%H%M%S")
-        self.path = f"saved/{timestr}/"        
+        # timestr = time.strftime("%Y%m%d_%H%M%S")
+        # self.path = f"saved/{timestr}/"
+        self.path=f"saved/lr{self.lr}{self.transform}{self.LP}_{self.S}/"
         isExist = os.path.exists(self.path)
         if not isExist:
             os.makedirs(self.path)
@@ -74,8 +80,8 @@ class Logger():
             plt.savefig(f"{plot_path}/epoch_{epoch}.png")
         plt.close()    
         
-    def save_weights(self, model):
-        torch.save(model.state_dict(), f"{self.path}/weights.pth")
+    def save_weights(self, model,epoch):
+        torch.save(model.state_dict(), f"{self.path}/epoch{epoch}_weights.pth")
         write_config(self.config, f"{self.path}/config.json")
 
     def save_loss(self):
@@ -96,6 +102,13 @@ class Logger():
         plt.colorbar()
         plt.savefig(self.path + f"{epoch}.png")
         plt.close()
+    def save_fig_slice(self, image):
+        for i in range(len(image[0][2])-1):
+            plt.figure()
+            plt.imshow(np.rot90(image[:,:,i], 3), cmap='grey')
+            plt.title(f"slice: {i+1}")
+            plt.savefig('saved/resampled' + f"slice{i+1}.png")
+            plt.close()
 
     def save_mask_fig(self, mask, prediction, index):
         # prob = torch.sigmoid(prediction)
@@ -113,5 +126,16 @@ class Logger():
         plt.imshow(np.rot90(heatmap, 3), cmap='hot', interpolation='nearest')
         plt.title(f"{index}_prediction")
         plt.colorbar()
-        plt.savefig(self.path + f"{index}.png")
+        plt.savefig(self.path + f"patient{index}.png")
         plt.close()
+
+    def dice_acc_csv(self,dice,acc,index):
+        cvs_file_path=self.path+"metrics.csv"
+        if not os.path.isfile(cvs_file_path):
+            df=pd.DataFrame(columns=['index', 'dice', 'acc'])
+        else:
+            df=pd.read_csv(cvs_file_path)
+        new_data=pd.DataFrame([[index, dice, acc]],columns=['index', 'dice', 'acc'])
+        df=pd.concat([df,new_data],ignore_index=True)
+        df.to_csv(cvs_file_path,index=False)
+

@@ -3,15 +3,16 @@
         "data_dir": "data/",
         "normalize": true,
         "extension": ".nrrd",
-        "LP_dimension": 160,
-        "S_dimension": 16
+        "LP_dimension": 320,
+        "S_dimension": 16,
+        "transformation": "withoutrotation"
     },
         
     "trainer": {
         "batch_size": 1,
         "collate_fn": "collate_fn",
         "device": "cuda",
-        "epochs": 10,
+        "epochs": 100,
         "lr": 0.0005,
         "loss_fn": "CrossEntropyLoss"
     },

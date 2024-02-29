@@ -38,6 +38,7 @@ class Trainer():
         """Training of model"""
         training_start_time = time.time()
         self.logger.make_dir()
+        self.visualize(self.model, self.visualize_img, -1)
         for epoch in range(0, self.config["epochs"]):
             self.model.train() 
             loss_train_epoch = self._run_epoch(epoch, self.train_loader)
@@ -62,19 +63,21 @@ class Trainer():
             for img, mask in tepoch:
                 tepoch.set_description(f"Epoch: {epoch}/{self.epochs}")
                 self.optimizer.zero_grad() # set gradients to 0           
-                loss_batch_list = list()             
                 img = img.to(self.device)
                 mask = mask.to(self.device)
                 prediction = self.model(img.unsqueeze(0)) # forward pass
                 loss = self.loss_fn(prediction, mask.long())
                 """Loss input: (batch,C,h,w) and (batch,h,w):target with class VALUES"""
+                loss_data_list.append(loss.cpu().detach().item())                
                 if self.model.training:
-                    loss_data_list.append(loss.cpu().detach().item())
                     loss.backward() # backward pass based on training of 1 batch        
                     self.optimizer.step() # update weight
                 loss_epoch_list.append(loss.cpu().detach())
         if self.model.training:
             self.logger.append_data_loss(loss_data_list)
+        else:
+            self.logger.append_valdata_loss(loss_data_list)
+
         del img, mask
         return sum(loss_epoch_list) / len(loss_epoch_list) # average loss 1 epoch
 
@@ -110,11 +113,11 @@ class Tester():
         self.config = config["tester"]
         self.device = torch.device(self.config["device"])
         self.logger = logger
+
     def test(self):
         self.model.eval()
         self.logger.make_dir()
         self.test_batch(self.loader)
-
 
     def test_batch(self,loader):
         with tqdm(loader, unit="batch") as tepoch:

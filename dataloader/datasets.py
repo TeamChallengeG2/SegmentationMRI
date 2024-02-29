@@ -106,11 +106,6 @@ class Dataset(Dataset):
         img, mask = self.resample(img, mask)
 
         if transform is not None:
-            # torch.manual_seed(self.seed + index)
-            # state = torch.get_rng_state()
-            # img = transform(img)
-            # torch.set_rng_state(state)
-            # mask = transform(mask)
             img, mask = transform(img, mask, index)
             
         if self.normalize:
@@ -123,8 +118,8 @@ class Dataset(Dataset):
         return img, mask
     
     def resample(self, img, mask):
-        img = zoom(input=img, zoom=(160/img.shape[0], 160/img.shape[0], 16/img.shape[-1]))
-        mask = zoom(input=mask, zoom=(160/mask.shape[0], 160/mask.shape[0], 16/mask.shape[-1]), order=0, mode="nearest")
+        img = zoom(input=img, zoom=(self.LP_dimension/img.shape[0], self.LP_dimension/img.shape[0], self.S_dimension/img.shape[-1]))
+        mask = zoom(input=mask, zoom=(self.LP_dimension/mask.shape[0], self.LP_dimension/mask.shape[0], self.S_dimension/mask.shape[-1]), order=0, mode="nearest")
         return torch.from_numpy(img).float(), torch.from_numpy(mask).float()
 
 
@@ -174,27 +169,20 @@ class Dataset(Dataset):
         """
         self.length += len(self.data_paths)
         self.transforms.append(transform)
-        print(f"Total images: {self.length}")
-    
-    # def plot(self, index, slice_z=10):      
-    #     """Plot image data and mask."""
-    #     img, mask = self.__getitem__(index)
-    #     plt.style.use(['science','ieee', 'no-latex'])
-    #     fig, axes = plt.subplots(2, 1)
-    #     plt.setp(plt.gcf().get_axes(), xticks=[], yticks=[])
-    #     plt.rcParams["font.family"] = "Arial"
-    #     axes[0].imshow(img[slice(None), slice(None), slice_z], cmap='gray')
-    #     axes[0].title.set_text(f"Image {index}")
-    #     axes[1].imshow(mask[slice(None), slice(None), slice_z], cmap='rainbow', alpha=0.5)
-    #     axes[1].title.set_text(f"Mask {index}")
-    #     plt.subplots_adjust(hspace=0.3)
-    #     plt.show()
-        
+        print(f"Augmentation done. Total images: {self.length}")
+
+    def get_original_spacings(self, index):
+        file_name = self.data_paths[index]
+        _, h = nrrd.read(file_name[0])
+        LP_spacing = h['space directions'][0][0]
+        S_spacing = h['space directions'][2][2]
+        return [LP_spacing, LP_spacing, S_spacing]
+
     def get_new_spacings(self, index):
         file_name = self.data_paths[index]
         _, h = nrrd.read(file_name[0])
-        LP_spacing = h['sizes'][0]*h['space directions'][0][0] / self.LP_dimension  
-        S_spacing = h['sizes'][2]*h['space directions'][2][2] / self.S_dimension
+        LP_spacing = self.get_original_spacings(index)[0]*h['sizes'][0] / self.LP_dimension  
+        S_spacing = self.get_original_spacings(index)[2]*h['sizes'][2] / self.S_dimension
         return [LP_spacing, LP_spacing, S_spacing]
             
     

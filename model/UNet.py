@@ -80,15 +80,20 @@ class UNet(nn.Module):
     def forward(self, inputs):
         """ Downsampling """
         s1, p1 = self.e1(inputs)
+        print(f's1: {s1.shape}, p1: {p1.shape}')
         s2, p2 = self.e2(p1)
+        print(f's2: {s2.shape}, p2: {p2.shape}')
         s3, p3 = self.e3(p2)
+        print(f's3: {s3.shape}, p3: {p3.shape}')
         s4, p4 = self.e4(p3)
+        print(f's4: {s4.shape}, p4: {p4.shape}')
 
         b = self.b(p4)
+        print(f'b: {b.shape}, p4: {p4.shape}')
 
         """ Upsampling """
         d1 = self.d1(b, s4)
-#         print(f'b: {b.shape},s4: {s4.shape}')
+        print(f'b: {b.shape},s4: {s4.shape}')
         d2 = self.d2(d1, s3)
 #         print(f'b: {d1.shape},s4: {s3.shape}')
         d3 = self.d3(d2, s2)

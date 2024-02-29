@@ -25,6 +25,7 @@ class Logger():
         self.loss_train_list = list()
         self.loss_data_list = list()
         self.loss_val_list = list()
+        self.loss_valdata_list = list()
         self.loss_fn = config["trainer"]["loss_fn"]
         self.save = save
 
@@ -43,6 +44,9 @@ class Logger():
         
     def append_data_loss(self, input):
         self.loss_data_list.append(input)
+
+    def append_valdata_loss(self, input):
+        self.loss_valdata_list.append(input)        
         
     def plot(self, epoch):
         matplotlib.use('Agg')
@@ -59,6 +63,8 @@ class Logger():
         # axes.plot(range(1, len(self.loss_data_list) + 1),
                 #   '.', markerfacecolor=(0, 0, 1, 0.3), label="Batch loss")
         axes.plot(range(0, len(self.loss_val_list)), self.loss_val_list, 'r-', label="Validation loss")
+        for xe, ye in zip(range(0, len(self.loss_valdata_list)), self.loss_valdata_list):
+                axes.scatter([xe] * len(ye), ye, c="red", s=0.1, alpha=0.5)        
         axes.set_ylim([0, 1])
         plt.xticks(range(0, len(self.loss_train_list), 20))
         # axes.title.set_text(f"{self.loss_fn}")

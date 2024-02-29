@@ -28,7 +28,8 @@ print(torch.cuda.is_available())
 if __name__ == "__main__":  # must be enabled for num_workers > 0
     config = load_config("config.json")
     dataset = Dataset(config)
-    dataset.augment_all(RandomRotate3D((-10,10),axes=(0,1)))
+    if config["dataloader"]["transformation"]=="withrotation":
+        dataset.augment_all(RandomRotate3D((-10,10),axes=(0,1)))
     train_set, val_set, test_set = random_split(dataset=dataset,
                                                 lengths=[0.7,0.2,0.1], 
                                                 generator=torch.Generator().manual_seed(42))

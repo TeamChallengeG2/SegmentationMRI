@@ -4,7 +4,8 @@
         "normalize": false,
         "extension": ".nrrd",
         "LP_dimension": 160,
-        "S_dimension": 16
+        "S_dimension": 16,
+        "transformation": "withoutrotation"
     },
         
     "trainer": {

@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import time
 from tkinter import filedialog
 from tqdm import tqdm
+import csv
 
 
 class Trainer():
@@ -31,7 +32,8 @@ class Trainer():
         self.model = model.to(self.device)
         self.logger = logger
         self.optimizer = torch.optim.Adam(params=self.model.parameters(),
-                                          lr=self.config["lr"]) 
+                                          lr=self.config["lr"])
+        self.schedular=torch.optim.lr_scheduler.MultiStepLR(self.optimizer,milestones=[5,10,15],gamma=0.5)
         self.visualize_img = visualize_img.unsqueeze(0)
 
     def train(self):
@@ -39,18 +41,24 @@ class Trainer():
         training_start_time = time.time()
         self.logger.make_dir()
         self.visualize(self.model, self.visualize_img, -1)
+        bestval_loss=1
         for epoch in range(0, self.config["epochs"]):
             self.model.train() 
             loss_train_epoch = self._run_epoch(epoch, self.train_loader)
+            # self.schedular.step()
+            print(self.schedular.get_lr())
             self.model.eval()
             loss_val_epoch = self._run_epoch(epoch, self.val_loader)
+
             print(f"Train loss: {loss_train_epoch:.4f} | Validation loss: {loss_val_epoch:.4f}")
             self.logger.append_train_loss(loss_train_epoch.detach().cpu().item())
             self.logger.append_val_loss(loss_val_epoch.detach().cpu().item())
             self.logger.plot(epoch)
             self.visualize(self.model, self.visualize_img, epoch)
-            if self.logger.save:
-                self.logger.save_weights(self.model)
+            if loss_val_epoch<bestval_loss:
+                bestval_loss=loss_val_epoch
+                if self.logger.save:
+                    self.logger.save_weights(self.model,epoch)
         print('Training finished, took {:.2f}s'.format(time.time() - training_start_time))
         self.logger.save_loss()
            
@@ -72,6 +80,7 @@ class Trainer():
                 if self.model.training:
                     loss.backward() # backward pass based on training of 1 batch        
                     self.optimizer.step() # update weight
+
                 loss_epoch_list.append(loss.cpu().detach())
         if self.model.training:
             self.logger.append_data_loss(loss_data_list)
@@ -134,8 +143,10 @@ class Tester():
                 index += 1
     
     def plot_score(self,index,prediction,mask):
-        print(f"dice{index}:"+str(self.cal_dice(prediction,mask)))
-        print(f"acc_volume{index}:" + str(self.cal_acc(prediction, mask)))
+        dice=str(self.cal_dice(prediction,mask))
+        acc=str(self.cal_acc(prediction, mask))
+        self.logger.dice_acc_csv(dice,acc,index)
+
 
     def cal_dice(self, pred_mask,mask):
         mask=mask.detach().cpu().numpy()

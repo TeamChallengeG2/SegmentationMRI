@@ -62,7 +62,6 @@ class Trainer():
         print('Training finished, took {:.2f}s'.format(time.time() - training_start_time))
         self.logger.save_loss()
            
-
     def _run_epoch(self, epoch, loader):
         """Helper function for one single batch training"""
         loss_epoch_list = list()
@@ -89,24 +88,6 @@ class Trainer():
 
         del img, mask
         return sum(loss_epoch_list) / len(loss_epoch_list) # average loss 1 epoch
-
-    # def _run_epoch_val(self, epoch, loader):
-    #     """Helper function for one single batch training"""
-    #     loss_epoch_list = list()
-    #     loss_data_list = list()
-    #     with torch.no_grad():
-    #         with tqdm(loader, unit="batch") as tepoch:
-    #
-    #             for img, mask in tepoch:
-    #                 tepoch.set_description(f"Epoch: {epoch}/{self.epochs}")
-    #                 img = img.to(self.device)
-    #                 mask = mask.to(self.device)
-    #                 prediction = self.model(img.unsqueeze(0))  # forward pass
-    #                 loss = self.loss_fn(prediction, mask.long())
-    #                 """Loss input: (batch,C,h,w) and (batch,h,w):target with class VALUES"""
-    #             loss_epoch_list.append(loss.cpu().detach())
-    #     del img, mask
-    #     return sum(loss_epoch_list) / len(loss_epoch_list)  # average loss 1 epoch
     
     def visualize(self, model, input, epoch):
         output = model(input.unsqueeze(0).to(self.device))
@@ -138,26 +119,28 @@ class Tester():
                 prediction = self.model(img.unsqueeze(0))
                 prob = torch.softmax(prediction, dim=1)
                 pred_mask = (prob[:, 1, :, :, :] >= 0.5).squeeze().detach().cpu().numpy()
+                print(pred_mask.shape)
                 self.plot_data(img, prediction, mask, index)# f
                 self.plot_score(index,pred_mask, mask)
                 index += 1
     
-    def plot_score(self,index,prediction,mask):
+    def plot_score(self, index, prediction, mask):
         dice=str(self.cal_dice(prediction,mask))
         acc=str(self.cal_acc(prediction, mask))
+        print(f"DSC: {dice}")
+        print(f"Acc (TP): {acc}")
         self.logger.dice_acc_csv(dice,acc,index)
-
 
     def cal_dice(self, pred_mask,mask):
         mask=mask.detach().cpu().numpy()
         smooth=1e-5
         intersection=(pred_mask*mask).sum()
         return (2.*intersection+smooth)/(pred_mask.sum()+mask.sum()+smooth)
+    
     def cal_acc(self,pred_mask,mask):
         mask = mask.detach().cpu().numpy()
         TP=(pred_mask*mask).sum()
         return TP/mask.sum()
-
 
     def plot_data(self,img, prediction, mask, index):
         self.logger.save_mask_fig(mask,prediction,index)

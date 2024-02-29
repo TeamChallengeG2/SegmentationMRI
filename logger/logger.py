@@ -108,6 +108,7 @@ class Logger():
         plt.colorbar()
         plt.savefig(self.path + f"{epoch}.png")
         plt.close()
+        
     def save_fig_slice(self, image):
         for i in range(len(image[0][2])-1):
             plt.figure()
@@ -120,7 +121,7 @@ class Logger():
         # prob = torch.sigmoid(prediction)
         mask = mask.squeeze().cpu()
         mask=mask[:,:,8]
-        print(mask.shape)
+        # print(mask.shape)
         prob = torch.softmax(prediction, dim=1)
         heatmap = prob[:, 1, :, :, 8].squeeze().detach().cpu()
         matplotlib.use('Agg')

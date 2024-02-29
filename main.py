@@ -11,7 +11,6 @@ Utrecht University & University of Technology Eindhoven
 
 # %% Import libraries
 
-# from model.UNet import UNet
 from model.UNet3D import UNet3D
 from utils import load_config, plot_overlay, plot_slices, plot_test
 from dataloader import Dataset
@@ -28,13 +27,11 @@ print(torch.cuda.is_available())
 if __name__ == "__main__":  # must be enabled for num_workers > 0
     config = load_config("config.json")
     dataset = Dataset(config)
-    if config["dataloader"]["transformation"]=="withrotation":
+    if config["dataloader"]["transformation"]:
         dataset.augment_all(RandomRotate3D((-10,10),axes=(0,1)))
     train_set, val_set, test_set = random_split(dataset=dataset,
                                                 lengths=[0.7,0.2,0.1], 
                                                 generator=torch.Generator().manual_seed(42))
-
-    # plot_slices(dataset[0][0], dataset[0][1], 6)
 
     train_loader = DataLoader(dataset=train_set, 
                             batch_size=config["trainer"]["batch_size"],
@@ -53,6 +50,8 @@ if __name__ == "__main__":  # must be enabled for num_workers > 0
 
     model = UNet3D(in_channels=1, num_classes=2)
     myLogger = Logger(config=config, save=True)
+    model.cuda()
+    model.load_state_dict(torch.load(R"saved\20240227_172605 320x320x16 150e 0.0005 aug\weights.pth"))
 
     #%% ============== Train ==============
     trainer = Trainer(model=model,
@@ -64,26 +63,17 @@ if __name__ == "__main__":  # must be enabled for num_workers > 0
 
     trainer.train()
 
-    #%% Spacings
-    # import nrrd
-    # _, h = nrrd.read(dataset.data_paths[0][0])
+    #%% ============== Test ==============
+    if torch.cuda.is_available():
+        model.cuda()
+    myLogger_test = Logger(config=config, save=False)
+    tester = Tester(model, val_loader, config=config, logger=myLogger_test)
+    tester.test()
 
-    # #%% Test 1
-    # model.cuda()
-    # model.load_state_dict(torch.load(r'saved\20240227_172605 320x320x16 150e 0.0005 aug\weights.pth'))
-    # img = val_set[1][0]
-    # mask = val_set[1][1]
-    # plot_overlay(img, mask)
-    # prediction = model(img.unsqueeze(0).unsqueeze(0).cuda())
-    # plot_test(img, mask, prediction)
-
-    #%% Test 
-    # if torch.cuda.is_available():
-    #     model.cuda()
-    # myLogger_test = Logger(config=config, save=True)
-    # tester=Tester(model, val_loader,config=config, logger=myLogger_test)
-    # tester.test()
-
-# %%
-
+    #%% ============== Visualization ==============
+    pred = model(val_set[0][0].unsqueeze(0).unsqueeze(0).cuda())
+    plot_test(image=val_set[0][0],
+              mask=val_set[0][1],
+              prediction=pred,
+              mask_only=False)
 # %%

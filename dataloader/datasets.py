@@ -36,7 +36,7 @@ class Dataset(Dataset):
         Dataset -- torch.Dataset object
     """    
 
-    def __init__(self, config,logger):
+    def __init__(self, config, logger=None):
         data_dir = config["dataloader"]["data_dir"]
         self.extension = config["dataloader"]["extension"]
         self.normalize = config["dataloader"]["normalize"]
@@ -120,7 +120,7 @@ class Dataset(Dataset):
     def resample(self, img, mask):
         img = zoom(input=img, zoom=(self.LP_dimension/img.shape[0], self.LP_dimension/img.shape[0], self.S_dimension/img.shape[-1]))
         mask = zoom(input=mask, zoom=( self.LP_dimension/mask.shape[0],  self.LP_dimension/mask.shape[0], self.S_dimension/mask.shape[-1]), order=0, mode="nearest")
-        self.logger.save_fig_slice(img)
+        # self.logger.save_fig_slice(img)
         return torch.from_numpy(img).float(), torch.from_numpy(mask).float()
 
 

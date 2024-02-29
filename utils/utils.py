@@ -16,6 +16,8 @@ import json
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 # %%
 
@@ -87,24 +89,42 @@ def plot_slices(image, mask, nr_slices=6):
     fig.subplots_adjust(wspace=-0.75, hspace=0)
     plt.show()
 
-def plot_test(image, mask, prediction, nr_slices=6):
+def plot_test(image, mask, prediction, mask_only=True, nr_slices=0):
     prob = torch.softmax(prediction, dim=1)
     heatmap = prob[:, 1, :, :, :].squeeze().detach().cpu()    
-    slices = list()
+    slices_with_mask = list()
 
     for i in range(0, mask.shape[2]):
         if np.isin(1, mask[:,:,i]):
-            slices.append(i)
+            slices_with_mask.append(i)
 
-    steps = np.linspace(slices[0], slices[-1], 6, dtype="uint8")
-    fig, axs = plt.subplots(nr_slices, 3, figsize=(10,10))
-    overlay = np.ma.masked_where(mask == 0, mask)
+    if nr_slices>0 and mask_only:
+        steps = np.linspace(slices_with_mask[0], slices_with_mask[-1], nr_slices, dtype="uint8")
+    elif mask_only:
+        steps = slices_with_mask
+
+    if nr_slices>0 and not mask_only:
+        steps = np.linspace(0, mask.shape[2]-1, nr_slices, dtype="uint8")
+    elif not mask_only:
+        steps = np.arange(0, mask.shape[2])
+
+    fig, axs = plt.subplots(len(steps), 3, figsize=(9, 3.125*len(steps)))
+    # overlay = np.ma.masked_where(mask == 0, mask)
+    
+    plt.style.use(['science','no-latex'])
+    mpl.use(mpl.get_backend())
 
     for i, ax in enumerate(axs):
         ax[0].imshow(np.rot90(image[:,:,steps[i]], 3), cmap="gray")
         ax[1].imshow(np.rot90(mask[:,:,steps[i]], 3), cmap="gray")
         cbar = ax[2].imshow(np.rot90(heatmap[:,:,steps[i]], 3), cmap="hot", interpolation="nearest")
-        plt.colorbar(cbar)
+        axins = inset_axes(ax[2],
+                    width="5%",  
+                    height="100%",
+                    loc="center right",
+                    borderpad=-1
+                   )
+        plt.colorbar(cbar, axins, orientation="vertical")
         # ax[2].imshow(np.rot90(overlay[:,:,steps[i]], 3), cmap="prism", alpha=0.4)
     
     axs[0][0].set_title("Image")
@@ -114,10 +134,7 @@ def plot_test(image, mask, prediction, nr_slices=6):
     for ax in axs.ravel():
         ax.set_axis_off()
 
-    fig.subplots_adjust(wspace=-0.75, hspace=0)
+    fig.subplots_adjust(wspace=0, hspace=0)
     plt.show()
 
 
-
-
-# %%

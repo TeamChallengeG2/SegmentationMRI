@@ -112,7 +112,7 @@ def plot_test(image, mask, prediction, mask_only=True, nr_slices=0):
     # overlay = np.ma.masked_where(mask == 0, mask)
     
     plt.style.use(['science','no-latex'])
-    mpl.use(mpl.get_backend())
+    get_ipython().run_line_magic('matplotlib', 'inline')
 
     for i, ax in enumerate(axs):
         ax[0].imshow(np.rot90(image[:,:,steps[i]], 3), cmap="gray")

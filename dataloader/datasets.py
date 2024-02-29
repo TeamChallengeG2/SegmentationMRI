@@ -102,7 +102,7 @@ class Dataset(Dataset):
         if index >= len(self.data_paths):
             index = (index - len(self.data_paths)) % len(self.data_paths)
                 
-        img, mask = self.path_to_tensor(self.data_paths[index])
+        img, mask, header = self.path_to_tensor(self.data_paths[index])
         img, mask = self.resample(img, mask)
 
         if transform is not None:
@@ -114,8 +114,8 @@ class Dataset(Dataset):
                                       
         # print(f"Transform: {transform}")
         # print(f"Index true: {index}")
-            
-        return img, mask
+
+        return img, mask, header
     
     def resample(self, img, mask):
         img = zoom(input=img, zoom=(self.LP_dimension/img.shape[0], self.LP_dimension/img.shape[0], self.S_dimension/img.shape[-1]))
@@ -144,7 +144,7 @@ class Dataset(Dataset):
             Tensor object of torch module containing image data.
 
         """
-        img, _ = nrrd.read(file_name[0])
+        img, h = nrrd.read(file_name[0])
         # mask, _ = nrrd.read(file_name[1])
         segmentation_info = slicerio.read_segmentation_info(file_name[1])
         segment_names_to_labels = [("Background", 0), ("Volume", 1)]
@@ -152,7 +152,7 @@ class Dataset(Dataset):
         mask, _ = slicerio.extract_segments(mask, mask_header, segmentation_info, segment_names_to_labels)
         # img = np.transpose(img, (2, 0, 1))
         # mask = np.transpose(mask, (2, 0, 1))
-        return torch.from_numpy(img).float(), torch.from_numpy(mask).float()
+        return torch.from_numpy(img).float(), torch.from_numpy(mask).float(), h
     
     def augment_all(self, transform):
         """

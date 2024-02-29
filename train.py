@@ -67,7 +67,7 @@ class Trainer():
         loss_epoch_list = list()
         loss_data_list = list()
         with tqdm(loader, unit="batch") as tepoch:
-            for img, mask in tepoch:
+            for img, mask, _ in tepoch:
                 tepoch.set_description(f"Epoch: {epoch}/{self.epochs}")
                 self.optimizer.zero_grad() # set gradients to 0           
                 img = img.to(self.device)
@@ -113,13 +113,12 @@ class Tester():
         with tqdm(loader, unit="batch") as tepoch:
             print(tepoch)
             index = 1
-            for img, mask in tepoch:
+            for img, mask, _ in tepoch:
                 img = img.to(self.device)
                 mask = mask.to(self.device)
                 prediction = self.model(img.unsqueeze(0))
                 prob = torch.softmax(prediction, dim=1)
                 pred_mask = (prob[:, 1, :, :, :] >= 0.5).squeeze().detach().cpu().numpy()
-                print(pred_mask.shape)
                 self.plot_data(img, prediction, mask, index)# f
                 self.plot_score(index,pred_mask, mask)
                 index += 1

@@ -112,7 +112,7 @@ def plot_test(image, mask, prediction, mask_only=True, nr_slices=0):
     # overlay = np.ma.masked_where(mask == 0, mask)
     
     plt.style.use(['science','no-latex'])
-    get_ipython().run_line_magic('matplotlib', 'inline')
+    get_ipython().run_line_magic('matplotlib', 'inline') # plot inline in vscode
 
     for i, ax in enumerate(axs):
         ax[0].imshow(np.rot90(image[:,:,steps[i]], 3), cmap="gray")

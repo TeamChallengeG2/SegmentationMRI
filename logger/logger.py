@@ -30,7 +30,7 @@ class Logger():
         self.loss_fn = config["trainer"]["loss_fn"]
         self.save = save
         self.lr=config["trainer"]["lr"]
-        self.transform=config["dataloader"]["transformation"]
+        self.transform=config["dataloader"]["rotation_angle"]
         self.LP=config["dataloader"]["LP_dimension"]
         self.S=config["dataloader"]["S_dimension"]
 

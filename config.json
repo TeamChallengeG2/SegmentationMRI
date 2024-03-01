@@ -3,14 +3,13 @@
         "data_dir": "data/",
         "normalize": false,
         "extension": ".nrrd",
-        "LP_dimension": 160,
+        "LP_dimension": 160, 
         "S_dimension": 16,
-        "transformation": false
+        "rotation_angle": 10
     },
         
     "trainer": {
         "batch_size": 1,
-        "collate_fn": "collate_fn",
         "device": "cuda",
         "epochs": 100,
         "lr": 0.0005,
@@ -19,7 +18,6 @@
 
     "tester": {
         "batch_size": 1,
-        "collate_fn": "collate_fn",
         "device": "cuda"
     }
 }

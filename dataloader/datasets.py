@@ -9,23 +9,17 @@ Utrecht University & University of Technology Eindhoven
 
 """ 
 
-from torch.utils.data import Dataset
-from torchvision.transforms import v2
-from matplotlib.widgets import Button, Slider
-from scipy.ndimage import zoom
-import nibabel as nib
 import torch
 import numpy as np
 import glob
 import scienceplots
 import matplotlib.pyplot as plt
-import SimpleITK as sitk
 import nrrd
 import slicerio
-import random
-import scipy
-
-
+from torch.utils.data import Dataset
+from torchvision.transforms import v2
+from scipy.ndimage import zoom
+from utils.transforms import RandomRotate3D
 
 class Dataset(Dataset):
     """
@@ -42,11 +36,13 @@ class Dataset(Dataset):
         self.normalize = config["dataloader"]["normalize"]
         self.LP_dimension = config["dataloader"]["LP_dimension"]
         self.S_dimension = config["dataloader"]["S_dimension"]
+        self.angle = config["dataloader"]["rotation_angle"]
         self.data_paths = self.dir_to_list(data_dir)
         self.length = len(self.data_paths)
         self.transforms = [None]
-        self.seed = np.random.randint(2147483647)
         self.logger = logger
+        if self.angle:
+            self.augment_all(RandomRotate3D((-self.angle, self.angle), axes=(0,1)))
         
     def dir_to_list(self, data_dir):
         """
@@ -122,11 +118,6 @@ class Dataset(Dataset):
         mask = zoom(input=mask, zoom=( self.LP_dimension/mask.shape[0],  self.LP_dimension/mask.shape[0], self.S_dimension/mask.shape[-1]), order=0, mode="nearest")
         # self.logger.save_fig_slice(img)
         return torch.from_numpy(img).float(), torch.from_numpy(mask).float()
-
-
-    def collate_fn(self, batch):
-        """Collate (collect and combine) function for varying input size."""
-        return batch
     
     def path_to_tensor(self, file_name):
         """
@@ -170,7 +161,7 @@ class Dataset(Dataset):
         """
         self.length += len(self.data_paths)
         self.transforms.append(transform)
-        print(f"Augmentation done. Total images: {self.length}")
+        print(f"Augmentation done with (-{self.angle}, {self.angle}). Total images: {self.length}")
 
     def get_original_spacings(self, index):
         file_name = self.data_paths[index]

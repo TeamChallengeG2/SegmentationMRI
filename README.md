@@ -1,6 +1,6 @@
 # Team Challenge - Medical Image Analysis
 
-This repository contains a PyTorch implementation used for the Team Challenge project 2023-2024, hosted by University of Technology Eindhoven and University Utrecht. The task is to perform voxel-wise semantic segmentation of the *spine* and the *chest* with Magnetic Resonance Images (MRI). The predicted segmentations are used to quantify the spinal length and chest volume, adhering to our definitions. Our method applies the 3D U-net on provided MRI data from the ScoliStorm project (UMC Utrecht). The workflow and usage of our method is described below. 
+This repository contains a PyTorch implementation used for the Team Challenge project 2023-2024, hosted by University of Technology Eindhoven and University Utrecht. The objective is to quantify the chest volume and/or spinal length in MR images. To this end, we perform voxel-wise semantic segmentation of the *spine* and the *chest*, adhering to our definitions. Our method applies the 3D U-net on provided MRI data from the ScoliStorm project (UMC Utrecht). The predicted segmentations are then used to quantify the volume and length. The workflow and usage of our method is described below. 
 ## Group 2
 
 * Romy Buijs
@@ -9,26 +9,27 @@ This repository contains a PyTorch implementation used for the Team Challenge pr
 * Daniel Le
 * Jiaxin Zhang
 
+## Quick usage
+
+
 ## Table of contents
 * [Description](#team-challenge---medical-image-analysis)
 * [Dependencies](#dependencies)
 * [Folder Structure](#folder-structure)
-* [Dataset and annotation process]()
 * [Workflow](#workflow)
     * [Config file](#config-file)
-    * [Dataset and annotation]()
-    * [Data preprocessing and augmentation]()
-    * [Data splitting]()
-    * [3D U-net architecture]()
-    * [Training]()
-        * [Model weights]()
-    * [Model output]()
-    * [Model testing]()
-        * [Qualitative results]()
-        * [Quantitative results]()
-    * [Postprocessing]()
-        * [Chest volume]()
-        * [Spinal length]()
+    * [Dataset and annotation](#dataset-and-annotation)
+    * [Data preprocessing, augmentation and splitting](#data-preprocessing-augmentation-and-splitting)
+    * [3D U-net architecture](#3d-u-net-architecture)
+    * [Training](#training)
+        * [Model weights](#model-weights)
+    * [Model output](#model-output)
+    * [Model testing](#model-testing)
+        * [Qualitative results](#qualitative-results)
+        * [Quantitative results](#quantitative-results)
+    * [Postprocessing](#postprocessing)
+        * [Chest volume](#chest-volume)
+        * [Spinal length](#spinal-length)
 
 
 ## Dependencies
@@ -43,9 +44,9 @@ This repository contains a PyTorch implementation used for the Team Challenge pr
 * torch==2.0.1+cu117
 * torchvision==0.15.2+cu117
 * tqdm==4.66.2
-
-`pip install -r requirements.txt`
-
+```
+pip install -r requirements.txt
+```
 ## Folder Structure
 ```
 SegmentationMRI/
@@ -104,3 +105,27 @@ The config file is in `.json` file format and contains parameters used for data 
 }
 ```
 
+### Dataset and annotation
+Describe dataset. Modality and T2 weighted etc. Gaps. Patient info. Source. Physical spacings. Dimensions.
+Annotation anatomical boundaries (our definition). Mention 3D slicer.
+### Data preprocessing, augmentation and splitting
+Small geometric transformation: rotation 10 deg. Resampling due to Unet. Physical spacings.
+
+### 3D U-net architecture
+Describe 3D Unet encoding decoding path
+### Training
+Training parameters. Epochs. Loss function. 
+#### Model weights
+Weights loading
+### Model output
+Logits to heatmap
+### Model testing
+#### Qualitative results
+Visualization of data (show images low score and high score)
+#### Quantitative results
+Table of scores
+### Postprocessing
+#### Chest volume
+Describe calculations
+#### Spinal length
+Describe calculations

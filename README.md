@@ -44,7 +44,7 @@ This repository contains a PyTorch implementation used for the Team Challenge pr
 * torch==2.0.1+cu117
 * torchvision==0.15.2+cu117
 * tqdm==4.66.2
-```
+```bash
 pip install -r requirements.txt
 ```
 ## Folder Structure
@@ -52,6 +52,7 @@ pip install -r requirements.txt
 SegmentationMRI/
 ├───config.json - holds configuration preprocessing, training, validation and testing
 ├───main.py - main script to run training, validation and testing
+├───postprocessing.py - contains class for volume and spinal length calculation
 ├───train.py - class for training (, validation and testing)
 │
 ├───data/ - folder for .nrrd and .seg.nrrd data files 
@@ -79,7 +80,7 @@ SegmentationMRI/
 ### Config file 
 The config file is in `.json` file format and contains parameters used for data preprocessing, training and testing.
 
-```
+```JSON
 {
     "dataloader": {
         "data_dir": "data/",                // path to .nrrd directory
@@ -91,16 +92,16 @@ The config file is in `.json` file format and contains parameters used for data 
     },
         
     "trainer": {    
-        "batch_size": 1,                    
-        "device": "cuda",                   
-        "epochs": 100,
+        "batch_size": 1,                    // batch size
+        "device": "cuda",                   // selected device for training
+        "epochs": 100,                      // number of epochs 
         "lr": 0.0005,                       // learning rate
         "loss_fn": "CrossEntropyLoss"       // loss function used for training
     },
 
     "tester": {
-        "batch_size": 1,
-        "device": "cuda"
+        "batch_size": 1,                    // batch size
+        "device": "cuda"                    // selected device for testing
     }
 }
 ```
@@ -123,7 +124,17 @@ Logits to heatmap
 #### Qualitative results
 Visualization of data (show images low score and high score)
 #### Quantitative results
-Table of scores
+
+|Filename |   Volume [mm^3] |   Volume [L] |   DSC (pre-resample) |   DSC |
+:-------------|----------------:|-------------:|---------------------:|------:|
+EBS_7        |     1.95105e+06 |         1.95 |                0.975 | 0.975 |
+|  EBS16        |     2.07702e+06 |         2.08 |                0.976 | 0.977 |
+|  EBS11        |     2.7426e+06  |         2.74 |                0.968 | 0.968 |
+|  EBS18        |     2.3289e+06  |         2.33 |                0.979 | 0.979 |
+|  Volunteer 23 |     5.68862e+06 |         5.69 |                0.912 | 0.917 |
+|  EBS_8        |     1.80228e+06 |         1.8  |                0.973 | 0.973 |
+|  Volunteer 16 |     8.51858e+06 |         8.52 |                0.985 | 0.985 |
+
 ### Postprocessing
 #### Chest volume
 Describe calculations

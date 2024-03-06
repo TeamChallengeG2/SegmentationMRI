@@ -67,7 +67,7 @@ class Trainer():
         loss_epoch_list = list()
         loss_data_list = list()
         with tqdm(loader, unit="batch") as tepoch:
-            for img, mask, _ in tepoch:
+            for img, mask, _, _ in tepoch:
                 tepoch.set_description(f"Epoch: {epoch}/{self.epochs}")
                 self.optimizer.zero_grad() # set gradients to 0           
                 img = img.to(self.device)
@@ -113,7 +113,7 @@ class Tester():
         with tqdm(loader, unit="batch") as tepoch:
             print(tepoch)
             index = 1
-            for img, mask, _ in tepoch:
+            for img, mask, _, _ in tepoch:
                 img = img.to(self.device)
                 mask = mask.to(self.device)
                 prediction = self.model(img.unsqueeze(0))

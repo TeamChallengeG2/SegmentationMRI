@@ -18,6 +18,7 @@ from dataloader import Dataset
 from torch.utils.data import DataLoader, random_split
 from train import Trainer, Tester
 from logger import Logger
+from postprocessing import calc_volumes, Volume
 
 print(torch.__version__) 
 print(torch.cuda.is_available())
@@ -49,7 +50,6 @@ if __name__ == "__main__":  # must be enabled for num_workers > 0
     myLogger = Logger(config=config, save=True)
     model.cuda()
     model.load_state_dict(torch.load(R"saved\20240227_172605 320x320x16 150e 0.0005 aug\weights.pth"))
-
     #%% ============== Train ==============
     trainer = Trainer(model=model,
                     train_loader=train_loader,
@@ -66,11 +66,13 @@ if __name__ == "__main__":  # must be enabled for num_workers > 0
     myLogger_test = Logger(config=config, save=False)
     tester = Tester(model, val_loader, config=config, logger=myLogger_test)
     tester.test()
+    #%% ============== Volume ==============
+    pd_data = calc_volumes(test_set, model)
 
     #%% ============== Visualization ==============
-    pred = model(val_set[0][0].unsqueeze(0).unsqueeze(0).cuda())
-    plot_test(image=val_set[0][0],
-              mask=val_set[0][1],
+    pred = model(test_set[4][0].unsqueeze(0).unsqueeze(0).cuda())
+    plot_test(image=test_set[4][0],
+              mask=test_set[4][1],
               prediction=pred,
               mask_only=False)
 # %%

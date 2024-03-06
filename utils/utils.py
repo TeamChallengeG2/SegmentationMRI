@@ -137,4 +137,8 @@ def plot_test(image, mask, prediction, mask_only=True, nr_slices=0):
     fig.subplots_adjust(wspace=0, hspace=0)
     plt.show()
 
-
+def calc_dsc(pred_mask, mask):
+    mask=mask.detach().cpu().numpy()
+    smooth=1e-5
+    intersection=(pred_mask*mask).sum()
+    return (2.*intersection+smooth)/(pred_mask.sum()+mask.sum()+smooth)

@@ -111,12 +111,11 @@ class Dataset(Dataset):
         # print(f"Transform: {transform}")
         # print(f"Index true: {index}")
 
-        return img, mask, header
+        return img, mask, header, self.data_paths[index][0].split("\\")[1]
     
     def resample(self, img, mask):
         img = zoom(input=img, zoom=(self.LP_dimension/img.shape[0], self.LP_dimension/img.shape[0], self.S_dimension/img.shape[-1]))
         mask = zoom(input=mask, zoom=( self.LP_dimension/mask.shape[0],  self.LP_dimension/mask.shape[0], self.S_dimension/mask.shape[-1]), order=0, mode="nearest")
-        # self.logger.save_fig_slice(img)
         return torch.from_numpy(img).float(), torch.from_numpy(mask).float()
     
     def path_to_tensor(self, file_name):

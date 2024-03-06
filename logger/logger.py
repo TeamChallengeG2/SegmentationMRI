@@ -136,13 +136,13 @@ class Logger():
         plt.savefig(self.path + f"patient{index}.png")
         plt.close()
 
-    def dice_acc_csv(self,dice,acc,index):
+    def dice_acc_csv(self,dice,acc,hd,index):
         cvs_file_path=self.path+"metrics.csv"
         if not os.path.isfile(cvs_file_path):
-            df=pd.DataFrame(columns=['index', 'dice', 'acc'])
+            df=pd.DataFrame(columns=['index', 'dice', 'acc', 'hd'])
         else:
             df=pd.read_csv(cvs_file_path)
-        new_data=pd.DataFrame([[index, dice, acc]],columns=['index', 'dice', 'acc'])
+        new_data=pd.DataFrame([[index, dice, acc, hd]],columns=['index', 'dice', 'acc', 'hd'])
         df=pd.concat([df,new_data],ignore_index=True)
         df.to_csv(cvs_file_path,index=False)
 

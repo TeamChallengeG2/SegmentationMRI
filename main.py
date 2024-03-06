@@ -49,7 +49,7 @@ if __name__ == "__main__":  # must be enabled for num_workers > 0
     model = UNet3D(in_channels=1, num_classes=2)
     myLogger = Logger(config=config, save=True)
     model.cuda()
-    model.load_state_dict(torch.load(R"saved\20240227_172605 320x320x16 150e 0.0005 aug\weights.pth"))
+    model.load_state_dict(torch.load(R"saved\lr0.0005withoutrotation320_16\epoch24_weights.pth"))
     #%% ============== Train ==============
     trainer = Trainer(model=model,
                     train_loader=train_loader,

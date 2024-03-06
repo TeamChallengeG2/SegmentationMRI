@@ -18,6 +18,7 @@ import time
 from tkinter import filedialog
 from tqdm import tqdm
 import csv
+import numpy as np
 
 
 class Trainer():
@@ -126,9 +127,11 @@ class Tester():
     def plot_score(self, index, prediction, mask):
         dice=str(self.cal_dice(prediction,mask))
         acc=str(self.cal_acc(prediction, mask))
+        hd=str(self.hausdorff_distance(prediction,mask))
         print(f"DSC: {dice}")
         print(f"Acc (TP): {acc}")
-        self.logger.dice_acc_csv(dice,acc,index)
+        print(f"HD:{hd}")
+        self.logger.dice_acc_csv(dice,acc,hd, index)
 
     def cal_dice(self, pred_mask,mask):
         mask=mask.detach().cpu().numpy()
@@ -140,6 +143,21 @@ class Tester():
         mask = mask.detach().cpu().numpy()
         TP=(pred_mask*mask).sum()
         return TP/mask.sum()
+
+    def hausdorff_distance(self, pred_mask, mask):
+        from scipy.spatial.distance import directed_hausdorff
+        mask=mask.detach().squeeze().cpu().numpy()
+        points_seg1 = np.array(np.where(pred_mask > 0)).T
+        points_seg2 = np.array(np.where(mask > 0)).T
+
+        # Calculate directed Hausdorff distance
+        distance1, _,_ = directed_hausdorff(points_seg1, points_seg2)
+        distance2, _,_ = directed_hausdorff(points_seg2, points_seg1)
+
+        # Choose the maximum distance
+        hausdorff_distance = max(distance1, distance2)
+
+        return hausdorff_distance
 
     def plot_data(self,img, prediction, mask, index):
         self.logger.save_mask_fig(mask,prediction,index)

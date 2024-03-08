@@ -2,3 +2,5 @@
 .spyproject/
 __pycache__/
 saved/
+desktop.ini
+example_results/*

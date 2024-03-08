@@ -13,66 +13,30 @@ Utrecht University & University of Technology Eindhoven
 
 import torch
 from model.UNet3D import UNet3D
-from utils import load_config, plot_overlay, plot_slices, plot_test
-from dataloader import Dataset
-from torch.utils.data import DataLoader, random_split
-from train import Trainer, Tester
-from logger import Logger
-from postprocessing import calc_volumes, Volume
+from dataloader import scoliosis_dataset, TransformDataset
+from train import Trainer
+from utils import load_config, export_plot
+from postprocessing import calc_volume_dsc_hd, show_table
 
-print(torch.__version__) 
-print(torch.cuda.is_available())
+config = load_config("config.json")     # Load config
+train_set_raw, val_set, test_set = scoliosis_dataset(config) # Base datasets
+train_set = TransformDataset(train_set_raw, config) # Augmentation in train dataset only!
 
-if __name__ == "__main__":  # must be enabled for num_workers > 0
-    config = load_config("config.json")
-    dataset = Dataset(config)
+model = UNet3D(in_channels=1, num_classes=config["dataloader"]["N_classes"]).cuda() # Build model
 
-    train_set, val_set, test_set = random_split(dataset=dataset,
-                                                lengths=[0.7,0.2,0.1], 
-                                                generator=torch.Generator().manual_seed(42))
+#%% ============== Train ==============
+# trainer = Trainer(model, train_set, val_set, config)
+# trainer.train()
 
-    train_loader = DataLoader(dataset=train_set, 
-                            batch_size=config["trainer"]["batch_size"],
-                            shuffle=True
-                            )
-    
-    val_loader = DataLoader(dataset=val_set, 
-                            batch_size=1
-                            )
-    
-    test_loader = DataLoader(dataset=test_set,
-                            batch_size=1
-                            )
-    
-    print(f"Train: {len(train_loader)}\nVal: {len(val_loader)}\nTest: {len(test_loader)}")
+#%% ============== Volume ==============
+model.load_state_dict(torch.load(R"saved\20240227_172605 320x320x16 150e 0.0005 aug\weights.pth"))
+pd_data = calc_volume_dsc_hd(test_set, model) # Create pandas data 
+show_table(pd_data) # Show pandas table
 
-    model = UNet3D(in_channels=1, num_classes=2)
-    myLogger = Logger(config=config, save=True)
-    model.cuda()
-    model.load_state_dict(torch.load(R"saved\20240227_172605 320x320x16 150e 0.0005 aug\weights.pth"))
-    #%% ============== Train ==============
-    trainer = Trainer(model=model,
-                    train_loader=train_loader,
-                    val_loader=val_loader,
-                    config=config,
-                    logger=myLogger,
-                    visualize_img=dataset[0][0])
-
-    trainer.train()
-
-    #%% ============== Test ==============
-    if torch.cuda.is_available():
-        model.cuda()
-    myLogger_test = Logger(config=config, save=False)
-    tester = Tester(model, val_loader, config=config, logger=myLogger_test)
-    tester.test()
-    #%% ============== Volume ==============
-    pd_data = calc_volumes(test_set, model)
-
-    #%% ============== Visualization ==============
-    pred = model(test_set[4][0].unsqueeze(0).unsqueeze(0).cuda())
-    plot_test(image=test_set[4][0],
-              mask=test_set[4][1],
-              prediction=pred,
-              mask_only=False)
-# %%
+#%% ============== Visualization ==============
+data=test_set[0]
+pred = model(data[0].unsqueeze(0).unsqueeze(0).cuda())
+export_plot(image=data[0],
+            mask=data[1],
+            prediction=pred,
+            mask_only=False)

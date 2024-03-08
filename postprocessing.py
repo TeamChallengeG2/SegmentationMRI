@@ -1,8 +1,10 @@
-from scipy.ndimage import zoom
 import torch
 import numpy as np
-from utils import calc_dsc
+import pandas as pd
+import seg_metrics.seg_metrics as sg
+from utils import calc_dsc, calc_hd95
 from tqdm import tqdm
+from scipy.ndimage import zoom, median_filter
 
 class Volume():
     def __init__(self, image, mask, prediction, header):
@@ -12,9 +14,9 @@ class Volume():
         self.prediction = prediction
         self.slice_thickness = 4
 
-    def prediction_to_binary(self):
+    def prediction_to_mask(self):
         """
-        Converts raw logits from prediction to probability map.
+        Converts raw logits from prediction to binary map.
         """        
         prob = torch.softmax(self.prediction, dim=1)
         return np.argmax(prob.detach().cpu().squeeze(), axis=0)
@@ -25,14 +27,21 @@ class Volume():
         Returns:
             float: volume in mm^3
         """        
-        self.S_dimension = self.get_new_S_dimension(self.header)
-        self.prediction_mask = self.prediction_to_binary()
-        self.dsc_preresample = calc_dsc(self.prediction_mask, self.mask)
+        self.prediction_mask = self.prediction_to_mask()
+        labels = np.unique(self.mask).tolist()
+        spacings = self.get_new_spacings(self.header, self.prediction_mask.shape)
+
+        self.metrics = sg.write_metrics(labels=labels,  # exclude background if needed
+                        gdth_img=self.mask.numpy(),
+                        pred_img=self.prediction_mask.numpy(),
+                        spacing=spacings,
+                        metrics=['hd', 'hd95','dice','fpr','fnr'])
+        
         self.image, self.mask, self.prediction_mask = self.resample(self.image, self.mask, self.prediction_mask)
-        nr_volume_voxels = np.count_nonzero(self.prediction_mask == 1)
+        nr_voxels = np.count_nonzero(self.prediction_mask == 1)
         [L_dim, P_dim, S_dim] = self.get_new_spacings(self.header, self.prediction_mask.shape)
         volume_voxel = L_dim*P_dim*S_dim
-        return nr_volume_voxels * volume_voxel
+        return nr_voxels * volume_voxel
 
     def get_new_S_dimension(self, header):
         """Method to determine new dimension size in superior axis
@@ -83,12 +92,14 @@ class Volume():
         Returns:
             numpy.ndarray: resampled img, mask and prediction
         """        
+        self.S_dimension = self.get_new_S_dimension(self.header)        
         img = zoom(input=img, zoom=(1, 1, self.S_dimension/img.shape[-1]))
         mask = zoom(input=mask, zoom=(1, 1, self.S_dimension/mask.shape[-1]), order=0, mode="nearest")
-        prediction_mask = zoom(input=prediction_mask, zoom=(1, 1, self.S_dimension/prediction_mask.shape[-1]), order=0, mode="nearest")
+        prediction_mask = zoom(input=prediction_mask, zoom=(1, 1, self.S_dimension/prediction_mask.shape[-1]))
+        prediction_mask = median_filter(prediction_mask, 5)
         return torch.from_numpy(img).float(), torch.from_numpy(mask).float(), torch.from_numpy(prediction_mask).float()
     
-def calc_volumes(dataset, model):
+def calc_volume_dsc_hd(dataset, model):
     """Returns list with volume and DSC score for a specific dataset.
 
     Args:
@@ -104,7 +115,42 @@ def calc_volumes(dataset, model):
         volume_object = Volume(img, mask, pred, header)
         volume_mm3 = volume_object.get_volume()
         volume_L = volume_mm3 / 1000000 
-        dsc_preresample = volume_object.dsc_preresample
-        dsc = calc_dsc(volume_object.prediction_mask, volume_object.mask)
-        data.append([filefolder, round(volume_mm3, 2), round(volume_L, 2), round(dsc_preresample.item(), 3), round(dsc.item(), 3)])
+        metric = volume_object.metrics[0]
+        data.append([filefolder,
+                     round(volume_mm3, 2), 
+                     round(volume_L, 2), 
+                     round(metric["dice"][1], 3), 
+                     round(metric["hd"][1], 3), 
+                     round(metric["hd95"][1], 3), 
+                     round(metric["fpr"][1], 3)],
+                     round(metric["fnr"][1], 3))
+        print(metric["fpr"][0])
+
     return data
+
+def show_table(pd_data):
+    df = pd.DataFrame(pd_data, columns=["Filename", 
+                                        "Volume [mm^3]", 
+                                        "Volume [L]", 
+                                        "DSC\u2193", 
+                                        "HD\u2191",
+                                        "HD95\u2191",
+                                        "FPR\u2191",
+                                        "FNR\u2191"]) # \u2191
+    display(df)
+    return df
+
+if __name__=="__main__":
+    from model.UNet3D import UNet3D
+    from dataloader import scoliosis_dataset, TransformDataset
+    from utils import load_config
+    from postprocessing import Volume, calc_volume_dsc_hd, show_table
+
+    config = load_config("config.json")     # Load config
+    train_set_raw, val_set, test_set = scoliosis_dataset(config) # Base datasets
+    train_set = TransformDataset(train_set_raw, config) # Augmentation in train dataset only!
+    model = UNet3D(in_channels=1, num_classes=config["dataloader"]["N_classes"]).cuda()
+    model.load_state_dict(torch.load(R"saved\20240227_172605 320x320x16 150e 0.0005 aug\weights.pth"))
+    pd_data = calc_volume_dsc_hd(test_set, model)
+    df = show_table(pd_data)    
+    

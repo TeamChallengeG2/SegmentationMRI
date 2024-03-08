@@ -18,7 +18,7 @@ This repository contains a PyTorch implementation used for the Team Challenge pr
 * [Folder Structure](#folder-structure)
 * [Workflow](#workflow)
     * [Config file](#config-file)
-    * [Dataset and annotation](#dataset-and-annotation)
+    * [Dataset and annotation process](#dataset-and-annotation)
     * [Data preprocessing, augmentation and splitting](#data-preprocessing-augmentation-and-splitting)
     * [3D U-net architecture](#3d-u-net-architecture)
     * [Training](#training)
@@ -36,6 +36,7 @@ This repository contains a PyTorch implementation used for the Team Challenge pr
 
 * Python==3.10.9 (may work with other versions)
 * matplotlib==3.8.2
+* monai==1.3.0
 * numpy==1.25.2
 * pandas==2.2.1
 * pynrrd==1.0.0
@@ -116,6 +117,7 @@ Small geometric transformation: rotation 10 deg. Resampling due to Unet. Physica
 Describe 3D Unet encoding decoding path
 ### Training
 Training parameters. Epochs. Loss function. 
+![Training visualization](visualization/visual.gif)
 #### Model weights
 Weights loading
 ### Model output
@@ -125,15 +127,19 @@ Logits to heatmap
 Visualization of data (show images low score and high score)
 #### Quantitative results
 
-|Filename |   Volume [mm^3] |   Volume [L] |   DSC (pre-resample) |   DSC |
-:-------------|----------------:|-------------:|---------------------:|------:|
-EBS_7        |     1.95105e+06 |         1.95 |                0.975 | 0.975 |
-|  EBS16        |     2.07702e+06 |         2.08 |                0.976 | 0.977 |
-|  EBS11        |     2.7426e+06  |         2.74 |                0.968 | 0.968 |
-|  EBS18        |     2.3289e+06  |         2.33 |                0.979 | 0.979 |
-|  Volunteer 23 |     5.68862e+06 |         5.69 |                0.912 | 0.917 |
-|  EBS_8        |     1.80228e+06 |         1.8  |                0.973 | 0.973 |
-|  Volunteer 16 |     8.51858e+06 |         8.52 |                0.985 | 0.985 |
+|Filename	|Volume [mm^3]|	Volume [L]|	DSC↓|	HD↑	|HD95↑|	FPR|
+|-------------- | -------------- | -------------- | -------------- | -------------- | -------------- | -------------- | 
+|  EBS_1 | 2819175 | 2.82 | 0.87 | 25.622 | 25.5 | 0.0 |
+| Volunteer 6 | 6825093 | 6.83 | 0.987 | 18.75 | 1.875 | 0.002 | 
+| EBS19 | 2647950 | 2.65 | 0.983 | 5.0 | 2.5 | 0.0 | 
+| EBS14 | 2789100 | 2.79 | 0.973 | 25.5 | 2.5 | 0.001 | 
+| Volunteer 10 | 8782300 | 8.78 | 0.986 | 27.188 | 1.875 | 0.005 | 
+| Volunteer 11 | 5715370 | 5.72 | 0.991 | 5.303 | 0.0 | 0.001 | 
+| EBS_6 | 1684375 | 1.68 | 0.94 | 25.5 | 25.5 | 0.0 | 
+| EBS15 | 2524050 | 2.52 | 0.958 | 25.5 | 25.5 | 0.002 | 
+| EBS12 | 3180375  | 3.18 | 0.903 | 25.986 | 25.5 | 0.008 | 
+| Volunteer 28 | 4697850 | 4.7 | 0.99 | 7.071 | 0.0 | 0.001 | 
+| EBS_5 | 1939074 | 1.94 | 0.942 | 25.5 | 25.5 | 0.0 |
 
 ### Postprocessing
 #### Chest volume

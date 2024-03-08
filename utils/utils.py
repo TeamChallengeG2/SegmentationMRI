@@ -11,87 +11,65 @@ Utrecht University & University of Technology Eindhoven
 
 # %%
 from collections import OrderedDict
+import os
 from pathlib import Path
 import json
+import time
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from matplotlib import ticker
+from monai.metrics import compute_hausdorff_distance, compute_generalized_dice
 
 # %%
 
-def load_config(fname):
-    fname = Path(fname)
-    with fname.open('rt') as handle:
+def load_config(filename):
+    """Loads config from .json file
+
+    Arguments:
+        filename (string): path to .json file
+
+    Returns:
+        config dictionary
+    """    
+    filename = Path(filename)
+    with filename.open('rt') as handle:
         return json.load(handle, object_hook=OrderedDict)
 
-def write_config(content, fname):
-    fname = Path(fname)
-    with fname.open('wt') as handle:
+def write_config(content, filename):
+    """Writes dictionary to .json file
+
+    Arguments:
+        content (dictionary)
+        filename (string to path)
+    """    
+    filename = Path(filename)
+    with filename.open('wt') as handle:
         json.dump(content, handle, indent=4, sort_keys=False)
 
-def plot_overlay(image, mask, slice=10):
-        """
-        Plots segmentation mask over an image.
+def export_plot(image, mask, prediction=None, mask_only=False,
+                nr_slices=0, export_path=None, slice=None, epoch=None):
+    """Exports plot image and mask. If given prediction, will also plot heatmap and overlay.
+       Exports all slices if no slice given.
 
-        Parameters
-        ----------
-        image : numpy.ndarray or torch.Tensor
-            image
-        mask : numpy.ndarray or torch.Tensor
-            mask
-        slice : int
+    Arguments:
+        image (torch.Tensor): input image
+        mask (torch.Tensor): input mask
 
-        Returns
-        -------
-        None.
-
-        """
-        overlay = np.ma.masked_where(mask == 0, mask)
-        fig, axs = plt.subplots(1, 3)
-        axs[0].imshow(np.rot90(image[:,:,slice], 3), cmap="gray")
-        axs[1].imshow(np.rot90(mask[:,:,slice], 3), cmap="gray")
-        axs[2].imshow(np.rot90(image[:,:,slice], 3), cmap="gray")
-        axs[2].imshow(np.rot90(overlay[:,:,slice], 3), cmap="prism", alpha=0.4)
-        titles = ["Image", "Mask", "Overlay"]
-
-        for ax, title in zip(axs, titles):
-            ax.set_title(title)
-            ax.axis("off")
-
-        plt.tight_layout()
-        plt.show()
-
-def plot_slices(image, mask, nr_slices=6):
-    slices = list()
-    for i in range(0, mask.shape[2]):
-        if np.isin(1, mask[:,:,i]):
-            slices.append(i)
-
-    steps = np.linspace(slices[0], slices[-1], 6, dtype="uint8")
-    fig, axs = plt.subplots(nr_slices, 3, figsize=(10,10))
-    overlay = np.ma.masked_where(mask == 0, mask)
-
-    for i, ax in enumerate(axs):
-        ax[0].imshow(np.rot90(image[:,:,steps[i]], 3), cmap="gray")
-        ax[1].imshow(np.rot90(mask[:,:,steps[i]], 3), cmap="gray")
-        ax[2].imshow(np.rot90(image[:,:,steps[i]], 3), cmap="gray")
-        ax[2].imshow(np.rot90(overlay[:,:,steps[i]], 3), cmap="prism", alpha=0.4)
-    
-    axs[0][0].set_title("Image")
-    axs[0][1].set_title("Mask")
-    axs[0][2].set_title("Overlay")
-    
-    for ax in axs.ravel():
-        ax.set_axis_off()
-
-    fig.subplots_adjust(wspace=-0.75, hspace=0)
-    plt.show()
-
-def plot_test(image, mask, prediction, mask_only=True, nr_slices=0):
-    prob = torch.softmax(prediction, dim=1)
-    heatmap = prob[:, 1, :, :, :].squeeze().detach().cpu()    
+    Keyword Arguments:
+        prediction: prediction from model (default: {None})
+        mask_only (boolean): plot slices with mask only (default: {False})
+        nr_slices (int): number of slices to export, 0 for all  (default: {0})
+        export_path: path (default: {None})
+        slice: index slice (default: {None})
+        epoch: parameter for filename (default: {None})
+    """    
+    if prediction is not None:
+        prob = torch.softmax(prediction, dim=1)
+        heatmap = prob[:, 1, :, :, :].squeeze().detach().cpu() 
+        segm_mask = np.argmax(prob.detach().cpu().squeeze(), axis=0)
     slices_with_mask = list()
 
     for i in range(0, mask.shape[2]):
@@ -108,58 +86,64 @@ def plot_test(image, mask, prediction, mask_only=True, nr_slices=0):
     elif not mask_only:
         steps = np.arange(0, mask.shape[2])
 
-    fig, axs = plt.subplots(len(steps), 3, figsize=(9, 3.125*len(steps)))
-    # overlay = np.ma.masked_where(mask == 0, mask)
-    
+    if not export_path:
+        timestr = time.strftime("%Y%m%d_%H%M%S")
+        export_path = "example_results/" + timestr
+
+    isExist = os.path.exists(export_path)
+    if not isExist:
+        os.makedirs(export_path)
+
+    mpl.use('Agg')
     plt.style.use(['science','no-latex'])
-    get_ipython().run_line_magic('matplotlib', 'inline') # plot inline in vscode
+    if slice is not None:
+        steps = [10]
 
-    for i, ax in enumerate(axs):
-        ax[0].imshow(np.rot90(image[:,:,steps[i]], 3), cmap="gray")
-        ax[1].imshow(np.rot90(mask[:,:,steps[i]], 3), cmap="gray")
-        cbar = ax[2].imshow(np.rot90(heatmap[:,:,steps[i]], 3), cmap="hot", interpolation="nearest")
-        axins = inset_axes(ax[2],
-                    width="5%",  
-                    height="100%",
-                    loc="center right",
-                    borderpad=-1
-                   )
-        plt.colorbar(cbar, axins, orientation="vertical")
-        # ax[2].imshow(np.rot90(overlay[:,:,steps[i]], 3), cmap="prism", alpha=0.4)
-    
-    axs[0][0].set_title("Image")
-    axs[0][1].set_title("Mask")
-    axs[0][2].set_title("Prediction")
-    
-    for ax in axs.ravel():
-        ax.set_axis_off()
+    for i in steps:
+        if prediction is not None:
+            fig, axs = plt.subplots(2, 2, figsize=(9, 9))
+            overlay = np.ma.masked_where(segm_mask == 0, segm_mask)
+            axs[0][0].imshow(np.rot90(image[:,:,i], 3), cmap="gray")
+            axs[0][1].imshow(np.rot90(mask[:,:,i], 3), cmap="gray")            
+            axs[1][0].imshow(np.rot90(image[:,:,i], 3), cmap="gray")
+            axs[1][0].imshow(np.rot90(overlay[:,:,i], 3), cmap="prism", alpha=0.4)
+            cbar = axs[1][1].imshow(np.rot90(heatmap[:,:,i], 3), cmap="jet", interpolation="nearest")
+            axins = inset_axes(axs[1][1],
+                        width="5%",  
+                        height="100%",
+                        loc="center right",
+                        borderpad=-1.5
+                        )
+            cb = plt.colorbar(cbar, axins, orientation="vertical", format=ticker.FormatStrFormatter("%.2f"))
+            cb.ax.locator_params(nbins=3)
+        else:
+            fig, axs = plt.subplots(1, 2, figsize=(4.5, 9))
+            axs[0].imshow(np.rot90(image[:,:,steps[i]], 3), cmap="gray")
+            axs[1].imshow(np.rot90(mask[:,:,steps[i]], 3), cmap="gray")   
 
-    fig.subplots_adjust(wspace=0, hspace=0)
-    plt.show()
+        for ax in axs.ravel():
+            ax.set_axis_off()
+        fig.subplots_adjust(wspace=0, hspace=0)
+        plt.show()
+        if epoch is not None:
+            i = epoch
+
+        plt.savefig(export_path + f"/{i}.png")
+        plt.close()        
 
 def calc_dsc(pred_mask, mask):
+    # return compute_generalized_dice(pred_mask.detach().cpu(), mask.detach().cpu())
     mask=mask.detach().cpu().numpy()
     smooth=1e-5
     intersection=(pred_mask*mask).sum()
     return (2.*intersection+smooth)/(pred_mask.sum()+mask.sum()+smooth)
 
-import pandas as pd
-from tabulate import tabulate
+def calc_hd95(pred_mask, mask):
+    return compute_hausdorff_distance(pred_mask.detach().cpu(), mask.detach().cpu(), percentile=95.0)
 
-def pandas_df_to_markdown_table(df):
-    # Dependent upon ipython
-    # shamelessly stolen from https://stackoverflow.com/questions/33181846/programmatically-convert-pandas-dataframe-to-markdown-table
-    from IPython.display import Markdown, display
-    fmt = ['---' for i in range(len(df.columns))]
-    df_fmt = pd.DataFrame([fmt], columns=df.columns)
-    df_formatted = pd.concat([df_fmt, df])
-    #display(Markdown(df_formatted.to_csv(sep="|", index=False)))
-    return Markdown(df_formatted.to_csv(sep="|", index=False))
-#     return df_formatted
-
-def df_to_markdown(df, y_index=False):
-    blob = tabulate(df, headers='keys', tablefmt='pipe')
-    if not y_index:
-        # Remove the index with some creative splicing and iteration
-        return '\n'.join(['| {}'.format(row.split('|', 2)[-1]) for row in blob.split('\n')])
-    return blob
+def prediction_to_mask(prediction):
+    """
+    Converts raw logits from prediction to probability map.
+    """        
+    prob = torch.softmax(prediction, dim=1)
+    return np.argmax(prob.detach().cpu().squeeze(), axis=0)

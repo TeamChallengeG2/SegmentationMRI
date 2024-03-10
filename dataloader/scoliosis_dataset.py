@@ -65,8 +65,8 @@ class ScoliosisDataset(Dataset):
         if index >= self.length:
             raise IndexError(f"index should be smaller than {self.length}")
                 
-        img, mask, header = self.path_to_tensor(self.data_paths[index])
-        img, mask = self.resample(img, mask)
+        img, mask, header = self.path_to_tensor(self.data_paths[index]) # Get tensor data from datapath
+        img, mask = self.resample(img, mask) # Resample to U-Net valid dimensions
             
         if self.normalize:
             img -= torch.min(img)
@@ -161,6 +161,14 @@ class ScoliosisDataset(Dataset):
         return torch.from_numpy(img).float(), torch.from_numpy(mask).float()
     
 def scoliosis_dataset(config):
+    """Splits the dataset and returns as train/val/test set.
+
+    Arguments:
+        config (dictionary): contains config parameters
+
+    Returns:
+        train_set, val_set, test_set: subset of dataset objects
+    """    
     dataset = ScoliosisDataset(config)
     train_set_raw, val_set, test_set = random_split(dataset=dataset,
                                                     lengths=config["dataloader"]["splitratio"], 

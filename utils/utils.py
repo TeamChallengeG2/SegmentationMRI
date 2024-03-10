@@ -18,6 +18,7 @@ import time
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import matplotlib as mpl
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib import ticker
@@ -99,14 +100,30 @@ def export_plot(image, mask, prediction=None, mask_only=False,
     if slice is not None:
         steps = [10]
 
+
+
     for i in steps:
         if prediction is not None:
             fig, axs = plt.subplots(2, 2, figsize=(9, 9))
             overlay = np.ma.masked_where(segm_mask == 0, segm_mask)
-            axs[0][0].imshow(np.rot90(image[:,:,i], 3), cmap="gray")
+            # axs[0][0].imshow(np.rot90(image[:,:,i], 3), cmap="gray")
             axs[0][1].imshow(np.rot90(mask[:,:,i], 3), cmap="gray")            
-            axs[1][0].imshow(np.rot90(image[:,:,i], 3), cmap="gray")
-            axs[1][0].imshow(np.rot90(overlay[:,:,i], 3), cmap="prism", alpha=0.4)
+            axs[0][0].imshow(np.rot90(image[:,:,i], 3), cmap="gray")
+            axs[0][0].imshow(np.rot90(overlay[:,:,i], 3), cmap="prism", alpha=0.4)           
+            axs[1][0].imshow(np.rot90(overlay[:,:,i], 3), interpolation="none")
+
+            sub_mask = mask[:,:,i]-2*segm_mask[:,:,i]
+            sub_mask = sub_mask.numpy()
+            cmap = {-2:[1.0,0.0,0.0,1],
+                    -1:[0.0,1.0,0.0,1],
+                    1:[0.0,0.0,1.0,1],
+                    0:[0.0,0.0,0.0,1],}
+            labels = {-2:'FP', -1:'TP', 1:'FN', 0:'',}
+            patches =[mpatches.Patch(color=cmap[j], label=labels[j]) for j in cmap]
+            overlay = np.array([[cmap[k] for k in j] for j in sub_mask])      
+            axs[1][0].imshow(np.rot90(overlay, 3), interpolation="none")
+            axs[1][0].legend(handles=patches, loc="upper right", labelspacing=0.1, labelcolor="w")
+
             cbar = axs[1][1].imshow(np.rot90(heatmap[:,:,i], 3), cmap="jet", interpolation="nearest")
             axins = inset_axes(axs[1][1],
                         width="5%",  

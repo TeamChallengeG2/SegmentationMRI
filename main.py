@@ -34,9 +34,12 @@ pd_data = calc_volume_dsc_hd(test_set, model) # Create pandas data
 show_table(pd_data) # Show pandas table
 
 #%% ============== Visualization ==============
+model.load_state_dict(torch.load(R"saved\20240227_172605 320x320x16 150e 0.0005 aug\weights.pth"))
 data=test_set[0]
 pred = model(data[0].unsqueeze(0).unsqueeze(0).cuda())
 export_plot(image=data[0],
             mask=data[1],
             prediction=pred,
             mask_only=False)
+
+# %%

@@ -1,6 +1,6 @@
 # Team Challenge - Medical Image Analysis
 
-This repository contains a PyTorch implementation used for the Team Challenge project 2023-2024, hosted by University of Technology Eindhoven and University Utrecht. The objective is to quantify the chest volume and/or spinal length in MR images. To this end, we perform voxel-wise semantic segmentation of the *spine* and the *chest*, adhering to our definitions. Our method applies the 3D U-net on provided MRI data from the ScoliStorm project (UMC Utrecht). The predicted segmentations are then used to quantify the volume and length. The workflow and usage of our method is described below. 
+This repository contains a PyTorch implementation used for the Team Challenge project 2023-2024, hosted by University of Technology Eindhoven and University Utrecht. The objective is to quantify the chest volume and/or spinal length in MR images. To this end, we perform voxel-wise semantic segmentation of the *spine* and the *chest volume*, adhering to our definitions. Our method applies the 3D U-Net on provided MRI data from the ScoliStorm project. The predicted segmentations are then used to quantify the volume and length. The workflow and usage of our method is described below. 
 ## Group 2
 
 * Romy Buijs
@@ -127,7 +127,7 @@ Logits to heatmap
 Visualization of data (show images low score and high score)
 #### Quantitative results
 
-|Filename	|Volume [mm^3]|	Volume [L]|	DSC↓|	HD↑	|HD95↑|	FPR|
+|Filename	|Volume [mm^3]|	Volume [L]|	DSC↑|	HD↓	|HD95↓|	FPR|
 |-------------- | -------------- | -------------- | -------------- | -------------- | -------------- | -------------- | 
 |  EBS_1 | 2819175 | 2.82 | 0.87 | 25.622 | 25.5 | 0.0 |
 | Volunteer 6 | 6825093 | 6.83 | 0.987 | 18.75 | 1.875 | 0.002 | 

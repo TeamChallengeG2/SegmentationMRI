@@ -120,6 +120,7 @@ The ratio of splitting the data into train/val/test set is [0.6:0.1:0.3].
 Since the structure of unet will reduce the size of each dimension of the image by a multiple of 2, we resampled the depth of the original MRI image to 16. To save GPU memory, we also resample the image's width and height from 640 to 160/320. Considering we need to calculate the volume and spinal length later, we calculated and recorded the new spacing information after resampling based on the original pysical spacings.
 
 ### 3D U-net architecture
+![image](https://github.com/TeamChallengeG2/SegmentationMRI/assets/159690372/04712ec6-721d-4a04-a748-08922e62c498)
 Describe 3D Unet encoding decoding path
 ### Training
 Training parameters. Epochs. Loss function. 

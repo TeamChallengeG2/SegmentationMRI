@@ -124,8 +124,8 @@ Since the structure of unet will reduce the size of each dimension of the image 
 paper link [https://link.springer.com/chapter/10.1007/978-3-319-46723-8_49]
 
 For the segmentation objective, we employ the prevalent network model widely adopted in the domain of medical image segmentation - U-net.
-3D U-net and 2D U-net have basically the same network structure. The main difference is that the former takes a three-dimensional volume as input and performs corresponding three-dimensional operations.
-Describe 3D Unet encoding decoding path
+3D U-net and 2D U-net have basically the same network structure. The main difference is that the former takes a three-dimensional volume as input and performs corresponding three-dimensional operations. 
+The 3D U-Net architecture consists of an encoding path and a decoding path. The encoding path captures features through convolutional blocks and downsampling, while the decoding path reconstructs the segmented output using upconvolutional blocks and skip connections. Skip connections preserve spatial information by linking the encoding and decoding paths. Due to our input being grayscale images and aiming to simultaneously segment the thoracic volume and a portion of the spinal tissue, the input image has 1 channel, while the output segmentation results have 2 channels.
 
 ### Training
 Training parameters. Epochs. Loss function. 

@@ -111,8 +111,10 @@ The config file is in `.json` file format and contains parameters used for data 
 Describe dataset. Modality and T2 weighted etc. Gaps. Patient info. Source. Physical spacings. Dimensions.
 Annotation anatomical boundaries (our definition). Mention 3D slicer.
 ### Data preprocessing, augmentation and splitting
-Normaliztion or not?
-Since we only have MRI data for 38 patients, we use the Scipy package for data augmentation.  We implement a small geometric transformation--a random rotation in the range of -10 to 10 degree (same angle for the originial image and the mask). After augmentation, we get a dataset that is twice the size of the original dataset, half of which is the original dataset and the other half rotated by a random angle. The ratio of splitting the data into train/val/test set is [0.6:0.1:0.3]. Since the structure of unet will reduce the size of each dimension of the image by a multiple of 2, we resampled the depth of the original MRI image to 16. To save GPU memory, we also resample the image's width and height from 640 to 160/320. Considering we need to calculate the volume and spinal length later, we calculated and recorded the new spacing information after resampling based on the original pysical spacings.
+###Normaliztion or not?
+###Since we only have MRI data for 38 patients, we use the Scipy package for data augmentation.  We implement a small geometric transformation--a random rotation in the range of -10 to 10 degree (same angle for the originial image and the mask). After augmentation, we get a dataset that is twice the size of the original dataset, half of which is the original dataset and the other half rotated by a random angle. 
+###The ratio of splitting the data into train/val/test set is [0.6:0.1:0.3]. 
+###Since the structure of unet will reduce the size of each dimension of the image by a multiple of 2, we resampled the depth of the original MRI image to 16. To save GPU memory, we also resample the image's width and height from 640 to 160/320. Considering we need to calculate the volume and spinal length later, we calculated and recorded the new spacing information after resampling based on the original pysical spacings.
 
 ### 3D U-net architecture
 Describe 3D Unet encoding decoding path

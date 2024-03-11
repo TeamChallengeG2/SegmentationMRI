@@ -111,6 +111,8 @@ The config file is in `.json` file format and contains parameters used for data 
 Describe dataset. Modality and T2 weighted etc. Gaps. Patient info. Source. Physical spacings. Dimensions.
 Annotation anatomical boundaries (our definition). Mention 3D slicer.
 ### Data preprocessing, augmentation and splitting
+Normaliztion or not?
+Since we only have MRI data for 38 patients, we use the Scipy package for data augmentation. SciPy ndimage submodule is dedicated to n-dimensional image processing. We implement a small geometric transformation--a random rotation in the range of -10 to 10 degree (same angle for the originial image and the mask). After augmentation, we get a dataset that is twice the size of the original dataset, half of which is the original dataset and the other half rotated by a random angle. 
 Small geometric transformation: rotation 10 deg. Resampling due to Unet. Physical spacings.
 
 ### 3D U-net architecture

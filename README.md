@@ -121,7 +121,12 @@ Since the structure of unet will reduce the size of each dimension of the image 
 
 ### 3D U-net architecture
 ![image](https://github.com/TeamChallengeG2/SegmentationMRI/assets/159690372/04712ec6-721d-4a04-a748-08922e62c498)
+paper link [https://link.springer.com/chapter/10.1007/978-3-319-46723-8_49]
+
+For the segmentation objective, we employ the prevalent network model widely adopted in the domain of medical image segmentation - U-net.
+3D U-net and 2D U-net have basically the same network structure. The main difference is that the former takes a three-dimensional volume as input and performs corresponding three-dimensional operations.
 Describe 3D Unet encoding decoding path
+
 ### Training
 Training parameters. Epochs. Loss function. 
 ![Training visualization](visualization/visual.gif)

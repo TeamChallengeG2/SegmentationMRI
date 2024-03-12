@@ -135,9 +135,9 @@ Weights loading
 ### Model output
 Logits to heatmap
 ### Model testing
-#### Qualitative results
-Visualization of data (show images low score and high score)
+The performance of the trained model can be tested on the test set. This test set contains 11 subjects. The results from the Unet model can be examined qualitatively and quantitatively.
 #### Quantitative results
+For quantitative results we compute the dise score, hausdorf distace, hausdorff distance of the 95th percentile and the false positive rate. The tabel below is an overview of the computed metrics. From top to bottom the subjects are in ascending dice score and descending hausdorff distance (95). 
 
 |Filename	|Volume [mm^3]|	Volume [L]|	DSC↑|	HD↓	|HD95↓|	FPR|
 |-------------- | -------------- | -------------- | -------------- | -------------- | -------------- | -------------- | 
@@ -153,8 +153,11 @@ Visualization of data (show images low score and high score)
 | Volunteer 28 | 4697850 | 4.7 | 0.99 | 7.071 | 0.0 | 0.001 | 
 | EBS_5 | 1939074 | 1.94 | 0.942 | 25.5 | 25.5 | 0.0 |
 
+#### Qualitative results
+The segmentation on the left corresponds to subject EBS_1, which has the lowest dice score and highest hausdorf distance. The segmentation map on the right corresponds to subject EBS_5, which has the highest dice score and lowest hausdorf distance.
+
 ### Postprocessing
 #### Chest volume
-Describe calculations
+The volume can be calculated from the segmentation mask. This is done by counting how many pixels are segmented as chest and multiplying this with the voxel size.
 #### Spinal length
 Describe calculations

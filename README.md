@@ -128,7 +128,7 @@ For the segmentation objective, we employ the prevalent network model widely ado
 The 3D U-Net architecture consists of an encoding path and a decoding path. The encoding path captures features through convolutional blocks and downsampling, while the decoding path reconstructs the segmented output using upconvolutional blocks and skip connections. Skip connections preserve spatial information by linking the encoding and decoding paths. Due to our input being grayscale images and aiming to simultaneously segment the thoracic volume and a portion of the spinal tissue, the input image has 1 channel, while the output segmentation results have 2 channels.
 
 ### Training
-The batch size is configured to be 1, and the number of epochs is set to 100/150. For our loss function, we employ the fundamental CrossEntropyLoss. Additionally, we utilize the Adam optimizer with a learning rate (lr) of 0.0005.
+The batch size is configured to be 1, and the number of epochs is set to 100/150. For our loss function, we employ the fundamental CrossEntropyLoss，which measures the dissimilarity betweeen predicted probablity distributions and actual class labels. Additionally, we utilize an adaptive learning rate optimiztion algorithm - Adam optimizer with a learning rate (lr) of 0.0005.
 ![Training visualization](visualization/visual.gif)
 
 #### Model weights

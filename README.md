@@ -128,14 +128,13 @@ For the segmentation objective, we employ the prevalent network model widely ado
 The 3D U-Net architecture consists of an encoding path and a decoding path. The encoding path captures features through convolutional blocks and downsampling, while the decoding path reconstructs the segmented output using upconvolutional blocks and skip connections. Skip connections preserve spatial information by linking the encoding and decoding paths. Due to our input being grayscale images and aiming to simultaneously segment the thoracic volume and a portion of the spinal tissue, the input image has 1 channel, while the output segmentation results have 2 channels.
 
 ### Training
-The batch size is set to 1, epochs are set to 100/150, the loss function we use is the basic CrossEntropyLoss, and we use Adam optimizer with lr as 0.0005.
-Training parameters. Epochs. Loss function. 
+The batch size is configured to be 1, and the number of epochs is set to 100/150. For our loss function, we employ the fundamental CrossEntropyLoss. Additionally, we utilize the Adam optimizer with a learning rate (lr) of 0.0005.
 ![Training visualization](visualization/visual.gif)
 
 #### Model weights
-Weights loading
+In the training process, we compare the current validation loss with the best one observed previously. If the current loss is greater than the previous best loss, we save the weights at this point. The weights associated with the best validation loss are utilized for testing and subsequent calculations.
 ### Model output
-Logits to heatmap
+"Logits" are the raw model predictions before activation. We use the softmax function to convert these logits into a probability distribution, ensuring that pixel probabilities sum to 1. This probability distribution is then utilized to create a heatmap, visually representing the likelihood of each pixel belonging to a specific class.
 ### Model testing
 #### Qualitative results
 Visualization of data (show images low score and high score)

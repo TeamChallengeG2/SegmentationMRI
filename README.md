@@ -115,7 +115,7 @@ Normaliztion or not?
 
 Since we only have MRI data for 38 patients, we use the Scipy package for data augmentation.  We implement a small geometric transformation--a random rotation in the range of -10 to 10 degree (same angle for the originial image and the mask). After augmentation, we get a dataset that is twice the size of the original dataset, half of which is the original dataset and the other half rotated by a random angle. 
 
-The ratio of splitting the data into train/val/test set is [0.6:0.1:0.3]. 
+The ratio of splitting the data into train/val/test set is [0.6:0.1:0.3] and there's no transformed images in the test set. 
 
 Since the structure of unet will reduce the size of each dimension of the image by a multiple of 2, we resampled the depth of the original MRI image to 16. To save GPU memory, we also resample the image's width and height from 640 to 160/320. Considering we need to calculate the volume and spinal length later, we calculated and recorded the new spacing information after resampling based on the original pysical spacings.
 
@@ -128,8 +128,10 @@ For the segmentation objective, we employ the prevalent network model widely ado
 The 3D U-Net architecture consists of an encoding path and a decoding path. The encoding path captures features through convolutional blocks and downsampling, while the decoding path reconstructs the segmented output using upconvolutional blocks and skip connections. Skip connections preserve spatial information by linking the encoding and decoding paths. Due to our input being grayscale images and aiming to simultaneously segment the thoracic volume and a portion of the spinal tissue, the input image has 1 channel, while the output segmentation results have 2 channels.
 
 ### Training
+The batch size is set to 1, epochs are set to 100/150, the loss function we use is the basic CrossEntropyLoss, and we use Adam optimizer with lr as 0.0005.
 Training parameters. Epochs. Loss function. 
 ![Training visualization](visualization/visual.gif)
+
 #### Model weights
 Weights loading
 ### Model output

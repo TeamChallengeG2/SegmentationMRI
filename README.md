@@ -290,4 +290,5 @@ To calculate the chest volume, we count the number of voxels corresponding to "v
 
 For left/right/anterior/posterior distances --> take most X pixel instead of CoM?
 
-
+### Proposal part 1
+[Link](TC_group2_part1.pdf) to paper.

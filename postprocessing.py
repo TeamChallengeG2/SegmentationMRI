@@ -35,11 +35,11 @@ class Volume():
                         gdth_img=self.mask.numpy(),
                         pred_img=self.prediction_mask.numpy(),
                         spacing=spacings,
-                        metrics=['hd', 'hd95','dice','fpr','fnr'])
+                        metrics=['hd', 'hd95','dice','tpr','fpr','fnr'])
         
-        self.image, self.mask, self.prediction_mask = self.resample(self.image, self.mask, self.prediction_mask)
-        nr_voxels = np.count_nonzero(self.prediction_mask == 1)
-        [L_dim, P_dim, S_dim] = self.get_new_spacings(self.header, self.prediction_mask.shape)
+        self.mask_volume, self.mask_spine = self.upsample(self.image, self.mask, self.prediction_mask)
+        nr_voxels = np.count_nonzero(self.mask_volume == 1)
+        [L_dim, P_dim, S_dim] = self.get_new_spacings(self.header, self.mask_volume.shape)
         volume_voxel = L_dim*P_dim*S_dim
         return nr_voxels * volume_voxel
 
@@ -81,8 +81,8 @@ class Volume():
         S_spacing = header['space directions'][2][2]
         return [LP_spacing, LP_spacing, S_spacing]
     
-    def resample(self, img, mask, prediction_mask):
-        """Resamples input to dimensions without slice gaps.
+    def upsample(self, img, mask, prediction_mask):
+        """Upsamples input to dimensions without slice gaps.
 
         Args:
             img (numpy.ndarray): input image
@@ -93,11 +93,17 @@ class Volume():
             numpy.ndarray: resampled img, mask and prediction
         """        
         self.S_dimension = self.get_new_S_dimension(self.header)        
-        img = zoom(input=img, zoom=(1, 1, self.S_dimension/img.shape[-1]))
-        mask = zoom(input=mask, zoom=(1, 1, self.S_dimension/mask.shape[-1]), order=0, mode="nearest")
-        prediction_mask = zoom(input=prediction_mask, zoom=(1, 1, self.S_dimension/prediction_mask.shape[-1]))
-        prediction_mask = median_filter(prediction_mask, 5)
-        return torch.from_numpy(img).float(), torch.from_numpy(mask).float(), torch.from_numpy(prediction_mask).float()
+        # img = zoom(input=img, zoom=(1, 1, self.S_dimension/img.shape[-1]))
+        # mask = zoom(input=mask, zoom=(1, 1, self.S_dimension/mask.shape[-1]), order=0, mode="nearest")
+
+        mask_volume = zoom(input=np.where(prediction_mask == 1, 1, 0), 
+                           zoom=(1, 1, self.S_dimension/prediction_mask.shape[-1]))
+        mask_spine = zoom(input=np.where(prediction_mask == 2, 1, 0), 
+                          zoom=(1, 1, self.S_dimension/prediction_mask.shape[-1]))
+        mask_volume = median_filter(mask_volume, 5)
+        mask_spine = median_filter(mask_spine, 5)
+
+        return torch.from_numpy(mask_volume).float(), torch.from_numpy(mask_spine).float()
     
 def calc_volume_dsc_hd(dataset, model):
     """Returns list with volume and DSC score for a specific dataset.
@@ -143,14 +149,23 @@ def show_table(pd_data):
 if __name__=="__main__":
     from model.UNet3D import UNet3D
     from dataloader import scoliosis_dataset, TransformDataset
-    from utils import load_config
+    from utils import load_config, plot_3D_mesh
     from postprocessing import Volume, calc_volume_dsc_hd, show_table
 
     config = load_config("config.json")     # Load config
     train_set_raw, val_set, test_set = scoliosis_dataset(config) # Base datasets
     train_set = TransformDataset(train_set_raw, config) # Augmentation in train dataset only!
     model = UNet3D(in_channels=1, num_classes=config["dataloader"]["N_classes"]).cuda()
-    model.load_state_dict(torch.load(R"saved\20240227_172605 320x320x16 150e 0.0005 aug\weights.pth"))
+    model.load_state_dict(torch.load(R"weights.pth"))
     pd_data = calc_volume_dsc_hd(test_set, model)
     df = show_table(pd_data)    
+
+    data = train_set[0]
+    pred = model(data[0].unsqueeze(0).unsqueeze(0).cuda())
+    vobj = Volume(image=data[0], 
+                mask=data[1], 
+                prediction=pred, 
+                header=data[2])
+    vobj.get_volume()
+    plot_3D_mesh(vobj)
     

@@ -240,7 +240,7 @@ Estimated Total Size (MB): 2808.95
 ### Model output
 As mentioned above, given an input of `(1, 160, 160, 16)` the output is of shape `(3, 160, 160, 16)` where the channel (dim=0) represent the logits. The logits are normalized using a Softmax function, ensuring that the voxel class probabilities sum to 1, defined as:
 
-${\sigma (\mathbf {z} )_{i}={\frac {e^{z_{i}}}{\sum _{j=1}^{N}e^{z_{j}}}}\ \ {\text{ for }}i=1,\dotsc ,N}$
+${\sigma (\mathbf {z} )\_{i}={\frac {e^{z\_{i}}}{\sum \_{j=1}^{N}e^{z\_{j}}}}\ \ {\text{ for }}i=1,\dotsc ,N}$
 
  This probability distribution is then utilized to create a heatmap, visually representing the probability of each voxel belonging to a specific class.
 

@@ -10,36 +10,39 @@ Utrecht University & University of Technology Eindhoven
 """ 
 
 # %% Import libraries
-
 import torch
 from model.UNet3D import UNet3D
 from dataloader import scoliosis_dataset, TransformDataset
 from train import Trainer
-from utils import load_config, export_plot
-from postprocessing import calc_volume_dsc_hd, show_table
+from utils import load_config, export_plot, plot_3D_mesh
+from postprocessing import calc_volume_dsc_hd, show_table, Volume
 
 config = load_config("config.json")     # Load config
 train_set_raw, val_set, test_set = scoliosis_dataset(config) # Base datasets
 train_set = TransformDataset(train_set_raw, config) # Augmentation in train dataset only!
 
 model = UNet3D(in_channels=1, num_classes=config["dataloader"]["N_classes"]).cuda() # Build model
-
+# model.load_state_dict(torch.load(R"saved\20240313_162034\epoch97_weights.pth"))
 #%% ============== Train ==============
-# trainer = Trainer(model, train_set, val_set, config)
-# trainer.train()
-
+trainer = Trainer(model, train_set, train_set, config)
+trainer.train()
 #%% ============== Volume ==============
-model.load_state_dict(torch.load(R"saved\20240227_172605 320x320x16 150e 0.0005 aug\weights.pth"))
 pd_data = calc_volume_dsc_hd(test_set, model) # Create pandas data 
 show_table(pd_data) # Show pandas table
-
 #%% ============== Visualization ==============
-model.load_state_dict(torch.load(R"saved\20240227_172605 320x320x16 150e 0.0005 aug\weights.pth"))
-data=test_set[0]
-pred = model(data[0].unsqueeze(0).unsqueeze(0).cuda())
+i=2
+data=train_set[i]
 export_plot(image=data[0],
             mask=data[1],
-            prediction=pred,
+            prediction=model(data[0].unsqueeze(0).unsqueeze(0).cuda()),
             mask_only=False)
-
+# %% ============== Plot 3D Mesh ==============
+data = train_set[0]
+pred = model(data[0].unsqueeze(0).unsqueeze(0).cuda())
+vobj = Volume(image=data[0], 
+              mask=data[1], 
+              prediction=pred, 
+              header=data[2])
+vobj.get_volume()
+plot_3D_mesh(vobj)
 # %%

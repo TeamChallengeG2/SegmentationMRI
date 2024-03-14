@@ -11,8 +11,8 @@ Utrecht University & University of Technology Eindhoven
 
 # %%
 from collections import OrderedDict
-import os
 from pathlib import Path
+import os
 import json
 import time
 import torch
@@ -69,7 +69,8 @@ def export_plot(image, mask, prediction=None, mask_only=False,
     """    
     if prediction is not None:
         prob = torch.softmax(prediction, dim=1)
-        heatmap = prob[:, 1, :, :, :].squeeze().detach().cpu() 
+        heatmap_vol = prob[:, 1, :, :, :].squeeze().detach().cpu() 
+        heatmap_spine= prob[:, 2, :, :, :].squeeze().detach().cpu() 
         segm_mask = np.argmax(prob.detach().cpu().squeeze(), axis=0)
     slices_with_mask = list()
 
@@ -100,43 +101,67 @@ def export_plot(image, mask, prediction=None, mask_only=False,
     if slice is not None:
         steps = [10]
 
-
-
     for i in steps:
         if prediction is not None:
-            fig, axs = plt.subplots(2, 2, figsize=(9, 9))
-            overlay = np.ma.masked_where(segm_mask == 0, segm_mask)
-            # axs[0][0].imshow(np.rot90(image[:,:,i], 3), cmap="gray")
-            axs[0][1].imshow(np.rot90(mask[:,:,i], 3), cmap="gray")            
-            axs[0][0].imshow(np.rot90(image[:,:,i], 3), cmap="gray")
-            axs[0][0].imshow(np.rot90(overlay[:,:,i], 3), cmap="prism", alpha=0.4)           
-            axs[1][0].imshow(np.rot90(overlay[:,:,i], 3), interpolation="none")
+            TP_vol = np.logical_and(mask[:,:,i]==1, segm_mask[:,:,i]==1)*1
+            TP_spine = np.logical_and(mask[:,:,i]==2, segm_mask[:,:,i]==2)*2
+            
+            FP_vol = np.logical_and(mask[:,:,i]==0, segm_mask[:,:,i]==1)*3
+            FP_spine = np.logical_and(mask[:,:,i]==0, segm_mask[:,:,i]==2)*4
 
-            sub_mask = mask[:,:,i]-2*segm_mask[:,:,i]
-            sub_mask = sub_mask.numpy()
-            cmap = {-2:[1.0,0.0,0.0,1],
-                    -1:[0.0,1.0,0.0,1],
-                    1:[0.0,0.0,1.0,1],
-                    0:[0.0,0.0,0.0,1],}
-            labels = {-2:'FP', -1:'TP', 1:'FN', 0:'',}
-            patches =[mpatches.Patch(color=cmap[j], label=labels[j]) for j in cmap]
-            overlay = np.array([[cmap[k] for k in j] for j in sub_mask])      
-            axs[1][0].imshow(np.rot90(overlay, 3), interpolation="none")
-            axs[1][0].legend(handles=patches, loc="upper right", labelspacing=0.1, labelcolor="w")
+            FN_vol = np.logical_and(mask[:,:,i]==1, segm_mask[:,:,i]==0)*5
+            FN_spine = np.logical_and(mask[:,:,i]==2, segm_mask[:,:,i]==0)*6
+            
+            sum = np.sum([TP_spine, TP_vol, FP_spine, FP_vol, FN_spine, FN_vol], axis=0)
+            fig, axs = plt.subplots(2, 3, figsize=(12, 9))
+            axs[0][0].imshow(np.rot90(image[:,:,i], 3), cmap="gray") # img + mask
+            axs[0][0].imshow(np.rot90(get_overlay(mask[:,:,i]), 3), cmap="gnuplot2", alpha=0.4, vmin=0, vmax=2.5)   
 
-            cbar = axs[1][1].imshow(np.rot90(heatmap[:,:,i], 3), cmap="jet", interpolation="nearest")
-            axins = inset_axes(axs[1][1],
+            axs[0][1].imshow(np.rot90(segm_mask[:,:,i], 3), cmap="gnuplot2", vmin=0, vmax=2.5) # prediction
+            cbar1 = axs[0][2].imshow(np.rot90(heatmap_vol[:,:,i], 3), cmap="jet") # heatmap volume
+
+            axins = inset_axes(axs[0][2],
                         width="5%",  
                         height="100%",
                         loc="center right",
                         borderpad=-1.5
                         )
-            cb = plt.colorbar(cbar, axins, orientation="vertical", format=ticker.FormatStrFormatter("%.2f"))
-            cb.ax.locator_params(nbins=3)
+            cb1 = plt.colorbar(cbar1, axins, orientation="vertical", format=ticker.FormatStrFormatter("%.2f"))
+            cb1.ax.locator_params(nbins=3)
+
+            cmap = {0:[0.0,0.0,0.0,1],
+                    1:[0.0,1.0,0.0,1],
+                    2:[0.0,1.0,0.0,1],
+                    3:[0.5,0.0,0.0,1],
+                    4:[0.5,0.0,0.0,1],
+                    5:[0.0,0.0,0.5,1],
+                    6:[0.0,0.0,0.5,1]}
+            
+            labels = {0:'', 1:'TP Volume', 2:'TP Spine', 3:'FP Volume', 4:'FP Spine', 5:'FN Volume', 6:'FN Spine' }
+            patches =[mpatches.Patch(color=cmap[j], label=labels[j]) for j in cmap]
+            overlay = np.array([[cmap[k] for k in j] for j in sum])      
+            axs[1][0].imshow(np.rot90(overlay, 3), interpolation="none")
+            axs[1][0].legend(handles=patches, loc="upper right", labelspacing=0.1, labelcolor="w")
+            axs[1][1].imshow(np.zeros(mask[:,:,i].shape), cmap="gray", vmin=0, vmax=1) # matrix
+            cbar2 = axs[1][2].imshow(np.rot90(heatmap_spine[:,:,i], 3), cmap="jet") # heatmap spine
+
+            axins = inset_axes(axs[1][2],
+                        width="5%",  
+                        height="100%",
+                        loc="center right",
+                        borderpad=-1.5
+                        )
+            cb2 = plt.colorbar(cbar2, axins, orientation="vertical", format=ticker.FormatStrFormatter("%.2f"))
+            cb2.ax.locator_params(nbins=3)
+
+            labels = ["Image", "Prediction mask", "Heatmap volume", "Overlap", "", "Heatmap spine"]
+            for ax, label in zip(axs.ravel(), labels):
+                ax.set_title(label)
+
         else:
             fig, axs = plt.subplots(1, 2, figsize=(4.5, 9))
             axs[0].imshow(np.rot90(image[:,:,steps[i]], 3), cmap="gray")
-            axs[1].imshow(np.rot90(mask[:,:,steps[i]], 3), cmap="gray")   
+            axs[1].imshow(np.rot90(mask[:,:,steps[i]], 3), cmap="gnuplot2")   
 
         for ax in axs.ravel():
             ax.set_axis_off()
@@ -147,6 +172,9 @@ def export_plot(image, mask, prediction=None, mask_only=False,
 
         plt.savefig(export_path + f"/{i}.png")
         plt.close()        
+
+def get_overlay(img):
+    return np.ma.masked_where(img==0, img)
 
 def calc_dsc(pred_mask, mask):
     # return compute_generalized_dice(pred_mask.detach().cpu(), mask.detach().cpu())
@@ -164,3 +192,26 @@ def prediction_to_mask(prediction):
     """        
     prob = torch.softmax(prediction, dim=1)
     return np.argmax(prob.detach().cpu().squeeze(), axis=0)
+
+def plot_3D_mesh(volume_obj):
+    import meshlib.mrmeshpy as mr
+    import meshlib.mrmeshnumpy as mrn
+    import open3d as o3d
+    
+    simpleVolume = mrn.simpleVolumeFrom3Darray(volume_obj.mask_volume.numpy())
+    floatGrid = mr.simpleVolumeToDenseGrid(simpleVolume)
+    mesh = mr.gridToMesh(floatGrid , mr.Vector3f(0.1, 0.1, 0.1), 0.5)
+    mr.saveMesh(mesh, "visualization/volume.stl")
+    mesh = o3d.io.read_triangle_mesh("visualization/volume.stl")
+    mesh = mesh.compute_vertex_normals()
+    mesh.paint_uniform_color([119, 0, 255])
+
+
+    simpleVolume2 = mrn.simpleVolumeFrom3Darray(volume_obj.mask_spine.numpy())
+    floatGrid2 = mr.simpleVolumeToDenseGrid(simpleVolume2)
+    mesh2 = mr.gridToMesh(floatGrid2 , mr.Vector3f(0.1, 0.1, 0.1), 0.5)
+    mr.saveMesh(mesh2, "visualization/spine.stl")
+    mesh2 = o3d.io.read_triangle_mesh("visualization/spine.stl")
+    mesh2 = mesh2.compute_vertex_normals()
+    mesh2.paint_uniform_color([1, 0.756, 0.239])
+    o3d.visualization.draw_geometries([mesh, mesh2])

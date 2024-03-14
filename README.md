@@ -10,7 +10,7 @@ This repository contains a PyTorch implementation used for the Team Challenge pr
 * Jiaxin Zhang
 
 ## Quick usage
-The individual ``.py`` files can be run as main and have their corresponding functionality. It is recommended however to execute from `main.py`:
+While the individual ``.py`` files can be executed as main script to perform their corresponding functionality, it is recommended to run them from `main.py`:
 
 **1. Load dataset** ```scoliosis_dataset.py```
 ```python
@@ -146,7 +146,7 @@ Annotation anatomical boundaries (our definition). Mention 3D slicer.
 
 ### Data preprocessing, augmentation and splitting
 
-In order to improve generalization and robustness of the model, we perform data augmentation using small geometric transformations. Our dataset, however, consists of axial slices with spacings of 24 mm in the inferior-superior axis. For this reason, we only use small random rotations in the range of -10 to 10 degrees along the inferior-superior axis. This effectively doubles the amount of data in the training set. The ratio of splitting the data into training, validation and testing set is 0.6:0.1:0.3. To avoid data contamination, no augmentation is performed on the test set.
+In order to improve generalization and robustness of the model, we perform data augmentation using small geometric transformations. Since our dataset consists of axial slices with spacings of 24 mm in the inferior-superior axis, we will only use small random rotations in the range of -10 to 10 degrees around this axis. This effectively doubles the amount of data in the training set. The ratio of splitting the data into training, validation and testing set is 0.6:0.1:0.3. To avoid data contamination, no augmentation is performed on the test set.
 
 Additionally, one of the characteristics of the U-Net is that the spatial dimensions of the input are reduced by a factor 2 in each encoder block. More specifically, each dimension must be divisible by $2^n$ where $n$ is the total number of pooling operators in the encoding path. As such, we resampled the depth of the original MRI image to 16, using cubic spline interpolation. The corresponding masks are resampled to the same dimension using nearest-neighbor interpolation. Furthermore, due to computational resources, we also resample the axial dimensions from 640 to 160/320. The new physical spacings are recalculated and stored, which are used for the volume and spinal length calculations in subsequent analysis.
 
@@ -240,24 +240,24 @@ Estimated Total Size (MB): 2808.95
 ### Model output
 As mentioned above, given an input of `(1, 160, 160, 16)` the output is of shape `(3, 160, 160, 16)` where the channel (dim=0) represent the logits. The logits are normalized using a Softmax function, ensuring that the voxel class probabilities sum to 1, defined as:
 
-${\displaystyle \sigma (\mathbf {z} )_{i}={\frac {e^{z_{i}}}{\sum _{j=1}^{N}e^{z_{j}}}}\ \ {\text{ for }}i=1,\dotsc ,N}$
+${\sigma (\mathbf {z} )_{i}={\frac {e^{z_{i}}}{\sum _{j=1}^{N}e^{z_{j}}}}\ \ {\text{ for }}i=1,\dotsc ,N}$
 
  This probability distribution is then utilized to create a heatmap, visually representing the probability of each voxel belonging to a specific class.
 
 ### Training
 The segmentation model is trained for 150 epochs with an initial learning rate of 0.0005. The loss function used is the Cross-Entropy Loss, which is defined as:
 
-${\displaystyle CE(p,q)=-\sum _{x\in {\mathcal {X}}}p(x)\,\log q(x)}$.
+${CE(p,q)=-\sum _{x\in {\mathcal {X}}}p(x)\,\log q(x)}$.
  
 where $p$ is the ground truth probability (1 or 0) and $q$ the predicted probability.
  
-The training time is `xxxx` s and the weights corresponding to the minimum validation score is saved and used for subsequent calculations. A visualization of the training process is shown below. 
+The training time is `xxxx` s and the weights corresponding to the best validation score is saved and used for subsequent calculations. A visualization of the training process is shown below. 
 ![Training visualization](visualization/visual.gif)
 
 ### Model testing
-The performance of the trained segmentation model is evaluated on the test set. This test set contains random 11 subjects, without any transformation applied. The qualitative and quantitative results are shown below.
+The performance of the trained segmentation model is evaluated on the test set. This test set contains 11 random subjects, without any transformation applied. The qualitative and quantitative results are shown below.
 #### Quantitative results
-For quantitative results we compute the Dice Similarity Score (DSC), Hausdorff Distance (HD), True Positive Rate (TPR), False Positive Rate (FPR) and False Negative Rate (FNR). The tabel below is an overview of the computed metrics (↑ higher is better, ↓ lower is better). 
+For quantitative results we compute the Dice Similarity Score (DSC), two-sided Hausdorff Distance (HD), True Positive Rate (TPR), False Positive Rate (FPR) and False Negative Rate (FNR). The tabel below is an overview of the computed metrics (↑ higher is better, ↓ lower is better). 
 
 |Filename	|Volume [mm^3]|	Volume [L]|	DSC↑|	HD↓	|HD95↓|	FPR|
 |-------------- | -------------- | -------------- | -------------- | -------------- | -------------- | -------------- | 
@@ -277,7 +277,7 @@ For quantitative results we compute the Dice Similarity Score (DSC), Hausdorff D
 An example of the qualitative results are shown below. The segmentation in `Fig X`. corresponds to subject EBS_1, which has the worst DSC score and HD distance. `Fig X.` corresponds to subject EBS_5, which has the best DSC and HD.
 
 ### Postprocessing
-The trained segmentation model is used to make predictions about the corresponding segmentation mask. The output masks have physical gaps of roughly 20 mm (depending on subject) between the slices along the inferior-superior axis and are upsampled such that there are no physical gaps in the mask, with the assumption that the slice thickness is 4 mm. A median filter is then applied to smoothen out rough edges. The resulting 3D view of volume and spine can be found [here](visualization/mesh_prediction.stl).
+The trained segmentation model is used to make predictions about the corresponding segmentation mask. The output masks have physical gaps of roughly 20 mm (different per subject) between the slices along the inferior-superior axis and are upsampled such that there are no physical gaps in the mask, with the assumption that the slice thickness is 4 mm. A median filter is then applied to smoothen out rough edges. The resulting 3D view of volume and spine can be found [here](visualization/mesh_prediction.stl).
 #### Chest volume
 To calculate the chest volume, we count the number of voxels corresponding to "volume" in our upsampled 3D mesh and multiply it with the physical volume of a single voxel. The results for calculated volumes are shown in the table above.
 

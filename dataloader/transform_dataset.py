@@ -75,3 +75,14 @@ class TransformDataset(Dataset):
         self.length += len(self.base)
         self.transforms.append(transform)
         print(f"Augmentation done with (-{self.angle}, {self.angle}). Total images: {self.length}")
+
+if __name__=="__main__":
+    from utils import load_config
+    from dataloader import scoliosis_dataset
+    import matplotlib.pyplot as plt
+
+    config = load_config("config.json")     # Load config
+    train_set_raw, val_set, test_set = scoliosis_dataset(config) # Base datasets
+    train_set = TransformDataset(train_set_raw, config) # Augmentation in train dataset only!
+
+    plt.imshow(train_set[-3][0][:,:,10], "gray")

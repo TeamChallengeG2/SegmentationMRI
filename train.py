@@ -43,7 +43,7 @@ class Trainer():
         """Training of model"""
         training_start_time = time.time()
         self.logger.make_dir()
-        self.visualize(self.model, -1)
+        self.visualize(epoch="init")
         best_val_loss=1
         for epoch in range(0, self.epochs):
             self.model.train() 
@@ -55,7 +55,7 @@ class Trainer():
             self.logger.append_train_loss(train_loss.detach().cpu().item())
             self.logger.append_val_loss(val_loss.detach().cpu().item())
             self.logger.plot(epoch)
-            self.visualize(self.model, epoch)
+            self.visualize(epoch)
             if val_loss<best_val_loss:
                 best_val_loss=val_loss
                 if self.logger.save:
@@ -91,13 +91,13 @@ class Trainer():
         del img, mask
         return sum(loss_epoch_list) / len(loss_epoch_list) # average loss 1 epoch
     
-    def visualize(self, model, epoch):
+    def visualize(self, epoch):
         """Exports image during training for visualization.
         """        
         img = self.visualize_img[0]
         mask = self.visualize_img[1]
-        output = model(img.unsqueeze(0).unsqueeze(0).to(self.device))
-        export_plot(img, mask, output, export_path=self.logger.path, epoch=epoch, slice=10)
+        output = self.model(img.unsqueeze(0).unsqueeze(0).to(self.device))
+        self.logger.export_train(epoch, img, mask, output)
             
 if __name__=="__main__":
     from model.UNet3D import UNet3D

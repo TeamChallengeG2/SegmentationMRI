@@ -4,3 +4,4 @@ __pycache__/
 saved/
 desktop.ini
 example_results/*
+**/__pycache__/

@@ -9,6 +9,7 @@ This repository contains a PyTorch implementation used for the Team Challenge pr
 * Daniel Le
 * Jiaxin Zhang
 
+[Link](TC_group2_part1.pdf) to proposal part 1.
 ## Quick usage
 While the individual ``.py`` files can be executed as main script to perform their corresponding functionality, it is recommended to run them from `main.py`:
 
@@ -156,7 +157,7 @@ The config file is in `.json` file format and contains parameters used for data 
 Data was obtained at the UMC Utrecht. The data included 19 T2w MRI from adult volunteers and from 19 children between 8 and 10 years. The amount of image slices varied from 12 to 17 slices, with a slice thickness of 4 mm and total gaps ranging from 20 to 25 mm. Pixel spacing ranged from 0.46875 to 0.625 mm. All pixels were isotropic. 
 
 The spinal length was defined between the level of the top of the sternum and T12. The definition of T12 was primarily based on the median arcuate ligament. The most caudal plane with some ventral covering of the aorta was defined as T12. This was done regardless of if the vertebral body was visible. The caudal part of T12 is not always covered by the median arcuate ligament. Therefore, for a second check, the presence of attached ribs and the shape of the vertebrae were also considered.
-During inspiration the median arcuate ligament moves 8 mm caudally (https://doi.org/10.5555/uri:pii:003960607390305X). Therefore we do introduce an uncertainty, but given our radiological experience this is probably better than defining T12 based only on vertebral anatomy. 
+During inspiration the median arcuate ligament moves 8 mm caudally [[1]](#bibliography). Therefore we do introduce an uncertainty, but given our radiological experience this is probably better than defining T12 based only on vertebral anatomy. 
 The most cranial visible part of the sternum was identified and used as the top border of the spinal length. This slice was also used as the top border for the definition of thoracic volume. The bottom border was defined as the most cranial plane where both kidneys were visible. 
 
 Using these borders segmentations of the volume inside the thoracic cage or abdominal cavity were made. For the spinal length the borders of the vertebral bodies were used. All segmentations were made using 3D Slicer. 
@@ -170,7 +171,7 @@ Additionally, one of the characteristics of the U-Net is that the spatial dimens
 
 ### 3D U-net architecture
 
-<a name="3dunet">![3dunet](https://github.com/TeamChallengeG2/SegmentationMRI/assets/159690372/04712ec6-721d-4a04-a748-08922e62c498)</a>
+![3dunet](visualization/unet.png)
 
 For the segmentation task, we have chosen to utilize the 3D U-Net model. The U-Net is a commonly used architecture in the domain of medical imaging. Although there are varying implementations, the 3D U-Net for example has three encoding and decoding blocks (opposed to four in 2D U-Net). The encoding path captures features through convolutional and max-pooling layers, while the decoding path reconstructs from the compressed representation using transpose-convolution layers combined with skip connections. Skip connections preserve spatial information by concatenating low-level feature maps with high-level feature maps. 
 
@@ -308,8 +309,10 @@ To calculate the chest volume, we count the number of voxels corresponding to "v
 
 For left/right/anterior/posterior distances --> take most X pixel instead of CoM?
 
-### Proposal part 1
-[Link](TC_group2_part1.pdf) to paper.
-
 ## Discussion
-In the provided dataset there were several pelvic kidneys and a horseshoe kidney. Given the incidence of pelvic kidneys (1 in 1000 https://www.ncbi.nlm.nih.gov/books/NBK563239/) this is a notable difference. Therefore our definition of the lower boundry for the thoracic volume might not be fully accurate. 
+In the provided dataset there were several pelvic kidneys and a horseshoe kidney. Given the incidence of pelvic kidneys (1 in 1000 [[2]](#bibliography)) this is a notable difference. Therefore our definition of the lower boundry for the thoracic volume might not be fully accurate. 
+
+## Bibliography
+[1] Stewart R. Reuter, M.D. Eugene F. Bernstein, M.D., Ph.D. "The anatomic basis for respiratory variation in median arcuate ligament compression of the celiac artery". DOI:https://doi.org/10.5555/uri:pii:003960607390305X
+
+[2] G. Bingham, “Pelvic kidney,” StatPearls., https://www.ncbi.nlm.nih.gov/books/NBK563239/ (accessed Mar. 22, 2024). 

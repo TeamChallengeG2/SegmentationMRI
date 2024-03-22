@@ -59,7 +59,8 @@ export_plot(image=data[0],
     * [Postprocessing](#postprocessing)
         * [Chest volume](#chest-volume)
         * [Spinal length](#spinal-length)
-
+* [Discussion](#discussion)
+          
 
 ## Dependencies
 

@@ -23,6 +23,7 @@ from matplotlib import ticker
 
 
 class Logger():
+    """Exports relevant information to files."""
     def __init__(self, config, save):
         self.config = config
         labels = ["train_loss", "val_loss",
@@ -36,9 +37,9 @@ class Logger():
         self.S=config["dataloader"]["S_dimension"]
 
     def make_dir(self):
+        """Creates directory for training."""        
         timestr = time.strftime("%Y%m%d_%H%M%S")
-        self.path = f"saved/{timestr}/"
-        # self.path=f"saved/LR{self.lr}_rot{self.transform}_{self.LP}^2x{self.S}/"
+        self.path = f"train_results/{timestr}/"
         isExist = os.path.exists(self.path)
         if not isExist:
             os.makedirs(self.path)
@@ -92,11 +93,20 @@ class Logger():
             plt.savefig(f"{plot_path}/epoch_{epoch}.png")
         plt.close()    
         
-    def export_train(self, epoch, img, mask, output):
-        prob = torch.softmax(output, dim=1)
+    def export_train(self, epoch, img, mask, logits):
+        """Export image during training.
+
+        Arguments:
+            epoch (int): number epoch
+            img (torch.Tensor): image
+            mask (torch.Tensor): mask 
+            logits (torch.Tensor): prediction logits
+        """        
+        prob = torch.softmax(logits, dim=1)
         heatmap_vol = prob[:, 1, :, :, :].squeeze().detach().cpu() 
         heatmap_spine= prob[:, 2, :, :, :].squeeze().detach().cpu() 
         segm_mask = np.argmax(prob.detach().cpu().squeeze(), axis=0)
+        matplotlib.use('Agg')
 
         fig, axs = plt.subplots(2, 2, figsize=(9, 9))
         axs[0][0].imshow(np.rot90(img[:,:,10], 3), cmap="gray") # img + mask
@@ -131,8 +141,8 @@ class Logger():
             ax.set_axis_off()
         fig.subplots_adjust(wspace=0, hspace=0)    
         plt.savefig(self.path + f"/{epoch}.png")
+        plt.close()
     
-
     def save_weights(self, model, epoch):
         """Saves model and weights to file.
 

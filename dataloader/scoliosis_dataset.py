@@ -12,11 +12,11 @@ Utrecht University & University of Technology Eindhoven
 import torch
 import numpy as np
 import glob
-import scienceplots
 import nrrd
 import slicerio
 from torch.utils.data import Dataset, random_split
 from scipy.ndimage import zoom
+from utils import load_config
 
 class ScoliosisDataset(Dataset):
     """
@@ -29,7 +29,7 @@ class ScoliosisDataset(Dataset):
 
         Args:
             config (collections.OrderedDict): OrderedDict config from .json file
-        """        
+        """    
         cfg = config["dataloader"]
         data_dir = cfg["data_dir"]                      
         self.extension = cfg["extension"]               
@@ -41,10 +41,12 @@ class ScoliosisDataset(Dataset):
         self.length = len(self.data_paths)              # dataset size
         
     def __len__(self):
+        """Returns length of base dataset."""        
         return self.length
 
     def __getitem__(self, index):
-        """Retrieves item and resamples by index.
+        """Retrieves resampled item by index. Additionally returns header and filename
+            for postprocessing.
 
         Arguments:
             index (int): index number
@@ -90,9 +92,9 @@ class ScoliosisDataset(Dataset):
             List of [image path, mask path] for each image.
 
         """
-        file_list = glob.glob(data_dir + "*")
+        file_list = glob.glob(data_dir + "*") # Search for all files in $data_dir
         data = list()
-        for file_path in file_list:
+        for file_path in file_list: # Combine corresponding .nrrd.seg with .nrrd and append
             img_path = glob.glob(file_path + "/*" + self.extension)[0]
             mask_path = glob.glob(file_path + "/*.seg" + self.extension)[0] 
             data.append([img_path, mask_path])
@@ -117,11 +119,11 @@ class ScoliosisDataset(Dataset):
                 collections.OrderedDict
 
         """
-        img, header = nrrd.read(file_name[0])
-        img = img.astype(np.float32)
+        img, header = nrrd.read(file_name[0]) # Read img and header from .nrrd
+        img = img.astype(np.float32) # Ensure dtype float32
         mask, mask_header = nrrd.read(file_name[1])
         segmentation_info = slicerio.read_segmentation_info(file_name[1])
-        segment_names_to_labels = [("Background", 0), ("Volume", 1)]
+        segment_names_to_labels = [("Background", 0), ("Volume", 1)] # Convert string labels to class values
         if self.N_classes==3:
             segment_names_to_labels.append(("Spine", 2))
 
@@ -146,7 +148,7 @@ class ScoliosisDataset(Dataset):
             mask
                 Torch mask tensor. 
         """                
-        img = zoom(input=img, 
+        img = zoom(input=img, # Zoom using b-spline interpolation
                    zoom=(self.LP_dimension/img.shape[0], 
                          self.LP_dimension/img.shape[1], 
                          self.S_dimension/img.shape[2]))
@@ -155,12 +157,12 @@ class ScoliosisDataset(Dataset):
                     zoom=(self.LP_dimension/mask.shape[0],
                           self.LP_dimension/mask.shape[1],
                           self.S_dimension/mask.shape[2]), 
-                    order=0, 
+                    order=0, # Nearest-neighbor as we do not want non-class values in mask
                     mode="nearest")
         
         return torch.from_numpy(img).float(), torch.from_numpy(mask).float()
     
-def scoliosis_dataset(config):
+def scoliosis_dataset(config=None):
     """Splits the dataset and returns as train/val/test set.
 
     Arguments:
@@ -169,6 +171,8 @@ def scoliosis_dataset(config):
     Returns:
         train_set, val_set, test_set: subset of dataset objects
     """    
+    if not config:
+        config = load_config("config.json")         
     dataset = ScoliosisDataset(config)
     train_set_raw, val_set, test_set = random_split(dataset=dataset,
                                                     lengths=config["dataloader"]["splitratio"], 
@@ -176,9 +180,7 @@ def scoliosis_dataset(config):
     return train_set_raw, val_set, test_set
     
 if __name__=="__main__":
-    from utils import load_config
     import matplotlib.pyplot as plt
 
-    config = load_config("config.json")     # Load config
-    train_set_raw, val_set, test_set = scoliosis_dataset(config) # Base datasets
+    train_set_raw, val_set, test_set = scoliosis_dataset() # Base datasets
     plt.imshow(train_set_raw[0][0][:,:,10], "gray")

@@ -1,7 +1,10 @@
-**.pyc
+*.pyc
 .spyproject/
 __pycache__/
 saved/
 desktop.ini
-example_results/*
+test_results/*
+train_results/*
 **/__pycache__/
+data/*
+**.pyc

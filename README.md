@@ -1,6 +1,6 @@
 # Team Challenge - Medical Image Analysis
 
-This repository contains a PyTorch implementation used for the Team Challenge project 2023-2024, hosted by University of Technology Eindhoven and University Utrecht. The objective is to quantify the chest volume and/or spinal length in MR images. To this end, we perform voxel-wise semantic segmentation of the *spine* and the *chest volume*, adhering to our definitions. Our method applies the 3D U-Net on provided MRI data from the ScoliStorm project. The predicted segmentations are then used to quantify the volume and length. The workflow and usage of our method is described below. 
+This repository contains a PyTorch implementation used for the Team Challenge project 2023-2024, hosted by the University of Technology Eindhoven and University Utrecht. The objective is to quantify the chest volume and/or spinal length in MR images. To this end, we perform voxel-wise semantic segmentation of the *spine* and the *chest volume*, adhering to our definitions. Our method applies the 3D U-Net on provided MRI data from the ScoliStorm project. The predicted segmentations are then used to quantify the volume and length. The workflow and usage of our method is described below. 
 ## Group 2
 
 * Romy Buijs
@@ -14,33 +14,42 @@ While the individual ``.py`` files can be executed as main script to perform the
 
 **1. Load dataset** ```scoliosis_dataset.py```
 ```python
-config = load_config("config.json") # Load config
-train_set_raw, val_set, test_set = scoliosis_dataset(config) # Base datasets
-train_set = TransformDataset(train_set_raw, config) # Augmentation in train dataset only!
+train_set_raw, val_set, test_set = scoliosis_dataset() # Base datasets
+train_set = TransformDataset(base_dataset=train_set_raw) # Augmentation in train dataset only!
 ```
 **2. Load model and weights**
 ```python
-model = UNet3D(in_channels=1, num_classes=config["dataloader"]["N_classes"]).cuda()
+model = UNet3D().cuda()
 model.load_state_dict(torch.load(R"weights.pth")) # Optionally, load weights
 ```
 **3. Train** ```train.py```
 ```python
-trainer = Trainer(model, train_set, train_set, config) # Trainer object
+trainer = Trainer(model=model, 
+                  train_set=train_set, 
+                  val_set=val_set)
 trainer.train() # Start training
 ```
 **4. Calculate volume & testing** ```postprocessing.py```
 ```python
-pd_data = calc_volume_dsc_hd(test_set, model) # Create pandas data 
-show_table(pd_data) # Show pandas table 
+pd_data = calc_scores(test_set, model) # Create pandas data 
+df = show_table(pd_data) # Show pandas table
 ```
 **5. Export prediction to file** 
 ```python
 i=2 # index subject
-data = train_set[i]
-export_plot(image=data[0],
+data=test_set[i]
+export_plot(image=data[0], # Shows prediction slice by slice in /test_results/
             mask=data[1],
-            prediction=model(data[0].unsqueeze(0).unsqueeze(0).cuda()),
-            mask_only=False) # Exported to "/example_results/"
+            prediction=model(data[0].unsqueeze(0).unsqueeze(0).cuda()))
+```
+**6. Visualization 3D mesh**
+```python
+vobj = Volume(image=data[0], 
+              mask=data[1], 
+              prediction=model(data[0].unsqueeze(0).unsqueeze(0).cuda()), 
+              header=data[2])
+vobj.get_volume()
+plot_3D_mesh(vobj)
 ```
 ## Table of contents
 * [Description](#team-challenge---medical-image-analysis)
@@ -48,7 +57,7 @@ export_plot(image=data[0],
 * [Folder Structure](#folder-structure)
 * [Workflow](#workflow)
     * [Config file](#config-file)
-    * [Dataset and annotation process](#dataset-and-annotation)
+    * [Dataset and annotation](#dataset-and-annotation)
     * [Data preprocessing, augmentation and splitting](#data-preprocessing-augmentation-and-splitting)
     * [3D U-net architecture](#3d-u-net-architecture)
     * [Model output](#model-output)
@@ -93,16 +102,16 @@ SegmentationMRI/
 ├───dataloader/ - code concerning dataloading 
 │   ├── scoliosis_dataset.py - class for loading original dataset
 │   └── transform_dataset.py - class for augmentation training data
-│ 
-├───example_results/ - contains example plots for segmentation prediction
 │
 ├───logger/ - logger for training
-│   └── logger.py
+│   └── logger.py│ 
 │
 ├───model/ - model used for training
 │   └── UNet3D.py
 │
-├───saved/ - weights, log files and plots during training for visualization
+├───test_results/ - contains test plots for segmentation prediction slice by slice
+│
+├───train_results/ - weights, log files and plots during training for visualization
 │
 └───utils/ - utility methods 
     ├── transforms.py - class for geometric transformations
@@ -118,18 +127,20 @@ The config file is in `.json` file format and contains parameters used for data 
 {
     "dataloader": {
         "data_dir": "data/",                // path to .nrrd directory
+        "splitratio": [1, 0, 0],            // split ratio train, val, test
         "normalize": false,                 // boolean value for normalization
         "extension": ".nrrd",               // extension of data files
         "LP_dimension": 160,                // dimension after resample in LP
         "S_dimension": 16,                  // dimension after resample in S
-        "rotation_angle": 10                // rotation angle, set to 0 for no aug
+        "rotation_angle": 10,               // rotation angle, set to 0 for no aug    
+        "N_classes": 3                      // number of classes
     },
         
     "trainer": {    
         "batch_size": 1,                    // batch size
         "device": "cuda",                   // selected device for training
         "epochs": 100,                      // number of epochs 
-        "lr": 0.0005,                       // learning rate
+        "lr": 5e-4,                         // learning rate
         "loss_fn": "CrossEntropyLoss"       // loss function used for training
     },
 
@@ -142,11 +153,11 @@ The config file is in `.json` file format and contains parameters used for data 
 
 ### Dataset and annotation
 Describe dataset. Modality and T2 weighted etc. Gaps. Patient info. Source. Physical spacings. diff dimensions each subject.
-Annotation anatomical boundaries (our definition). Mention 3D slicer.
+Annotation anatomical boundaries (our definition). Mention 3D slicer. LPS.
 
 ### Data preprocessing, augmentation and splitting
 
-In order to improve generalization and robustness of the model, we perform data augmentation using small geometric transformations. Since our dataset consists of axial slices with spacings of 24 mm in the inferior-superior axis, we will only use small random rotations in the range of -10 to 10 degrees around this axis. This effectively doubles the amount of data in the training set. The ratio of splitting the data into training, validation and testing set is 0.6:0.1:0.3. To avoid data contamination, no augmentation is performed on the test set.
+In order to improve generalization and robustness of the model, we perform data augmentation using geometric transformations. Since our dataset consists of axial slices with spacings of 24 mm in the inferior-superior axis, we will only use small random rotations in the range of -10 to 10 degrees around this axis. This effectively doubles the amount of data in the training set. The ratio of splitting the data into training, validation and testing set is 0.6:0.1:0.3. To avoid data contamination, no augmentation is performed on the test set.
 
 Additionally, one of the characteristics of the U-Net is that the spatial dimensions of the input are reduced by a factor 2 in each encoder block. More specifically, each dimension must be divisible by $2^n$ where $n$ is the total number of pooling operators in the encoding path. As such, we resampled the depth of the original MRI image to 16, using cubic spline interpolation. The corresponding masks are resampled to the same dimension using nearest-neighbor interpolation. Furthermore, due to computational resources, we also resample the axial dimensions from 640 to 160/320. The new physical spacings are recalculated and stored, which are used for the volume and spinal length calculations in subsequent analysis.
 
@@ -154,7 +165,7 @@ Additionally, one of the characteristics of the U-Net is that the spatial dimens
 
 <a name="3dunet">![3dunet](https://github.com/TeamChallengeG2/SegmentationMRI/assets/159690372/04712ec6-721d-4a04-a748-08922e62c498)</a>
 
-For the segmentation task, we have chosen to utilize the 3D U-Net model. The U-Net is a commonly used architecture in the domain of medical imaging. Although there are varying implementations, the 3D U-Net for example has three encoding and decoding blocks (opposed to for example four in 2D U-Net). The encoding path captures features through convolutional and max-pooling layers, while the decoding path reconstructs from the compressed representation using transpose-convolution layers combined with skip connections. Skip connections preserve spatial information by concatenating low-level feature maps with high-level feature maps. 
+For the segmentation task, we have chosen to utilize the 3D U-Net model. The U-Net is a commonly used architecture in the domain of medical imaging. Although there are varying implementations, the 3D U-Net for example has three encoding and decoding blocks (opposed to four in 2D U-Net). The encoding path captures features through convolutional and max-pooling layers, while the decoding path reconstructs from the compressed representation using transpose-convolution layers combined with skip connections. Skip connections preserve spatial information by concatenating low-level feature maps with high-level feature maps. 
 
 The *input* of the model is a grayscale image with shape `(1, 160, 160, 16)` (C, H, W, D). Since the objective is to make a prediction for a voxel belonging to a certain class, the output must contain 3 channels (`N_classes=3`: background, volume, spine). The channels correspond to the logits of a certain class. For the specific architecture refer to <a href="#3dunet">Fig. 1</a> and the model summary details below.
 
@@ -240,16 +251,16 @@ Estimated Total Size (MB): 2808.95
 ### Model output
 As mentioned above, given an input of `(1, 160, 160, 16)` the output is of shape `(3, 160, 160, 16)` where the channel (dim=0) represent the logits. The logits are normalized using a Softmax function, ensuring that the voxel class probabilities sum to 1, defined as:
 
-${\sigma (\mathbf {z} )\_{i}={\frac {e^{z\_{i}}}{\sum \_{j=1}^{N}e^{z\_{j}}}}\ \ {\text{ for }}i=1,\dotsc ,N}$
+${\sigma (\mathbf {z})\_{i}= {\frac {e^{z_{i}}}{\sum_{j=1}^ {N} e^{z_j}}}\ \ {\text{ for }}i=1,\dotsc ,N}$
 
  This probability distribution is then utilized to create a heatmap, visually representing the probability of each voxel belonging to a specific class.
 
 ### Training
-The segmentation model is trained for 150 epochs with an initial learning rate of 0.0005. The loss function used is the Cross-Entropy Loss, which is defined as:
+The segmentation model is trained for 150 epochs with an initial learning rate of `5e-4`. The loss function used is the Cross-Entropy Loss, which is defined as:
 
-${CE(p,q)=-\sum _{x\in {\mathcal {X}}}p(x)\,\log q(x)}$.
+${CE(p,q)=-\sum _{x\in {\mathcal {X}}}p(x) \log q(x)}$.
  
-where $p$ is the ground truth probability (1 or 0) and $q$ the predicted probability.
+where $p$ is the ground truth probability and $q$ the predicted probability.
  
 The training time is `xxxx` s and the weights corresponding to the best validation score is saved and used for subsequent calculations. A visualization of the training process is shown below. 
 ![Training visualization](visualization/visual.gif)

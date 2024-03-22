@@ -22,7 +22,6 @@ import matplotlib.patches as mpatches
 import matplotlib as mpl
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib import ticker
-from monai.metrics import compute_hausdorff_distance, compute_generalized_dice
 
 # %%
 
@@ -90,11 +89,13 @@ def export_plot(image, mask, prediction=None, mask_only=False,
 
     if not export_path:
         timestr = time.strftime("%Y%m%d_%H%M%S")
-        export_path = "example_results/" + timestr
+        export_path = "test_results/" + timestr
 
     isExist = os.path.exists(export_path)
     if not isExist:
         os.makedirs(export_path)
+
+    print(f"Export to {export_path}")
 
     mpl.use('Agg')
     plt.style.use(['science','no-latex'])
@@ -102,7 +103,7 @@ def export_plot(image, mask, prediction=None, mask_only=False,
         steps = [10]
 
     for i in steps:
-        if prediction is not None:
+        if prediction is not None: # Give TP, FP, FN different values for plotting
             TP_vol = np.logical_and(mask[:,:,i]==1, segm_mask[:,:,i]==1)*1
             TP_spine = np.logical_and(mask[:,:,i]==2, segm_mask[:,:,i]==2)*2
             
@@ -137,7 +138,8 @@ def export_plot(image, mask, prediction=None, mask_only=False,
                     5:[0.0,0.0,0.5,1],
                     6:[0.0,0.0,0.5,1]}
             
-            labels = {0:'', 1:'TP Volume', 2:'TP Spine', 3:'FP Volume', 4:'FP Spine', 5:'FN Volume', 6:'FN Spine' }
+            # labels = {0:'', 1:'TP Volume', 2:'TP Spine', 3:'FP Volume', 4:'FP Spine', 5:'FN Volume', 6:'FN Spine' }
+            labels = {0:'_', 1:'TP', 2:'_', 3:'FP', 4:'_', 5:'FN', 6:'_' }
             patches =[mpatches.Patch(color=cmap[j], label=labels[j]) for j in cmap]
             overlay = np.array([[cmap[k] for k in j] for j in sum])      
             axs[1][0].imshow(np.rot90(overlay, 3), interpolation="none")
@@ -159,9 +161,11 @@ def export_plot(image, mask, prediction=None, mask_only=False,
                 ax.set_title(label)
 
         else:
-            fig, axs = plt.subplots(1, 2, figsize=(4.5, 9))
+            fig, axs = plt.subplots(1, 3, figsize=(4.5, 14))
             axs[0].imshow(np.rot90(image[:,:,steps[i]], 3), cmap="gray")
-            axs[1].imshow(np.rot90(mask[:,:,steps[i]], 3), cmap="gnuplot2")   
+            axs[0].imshow(np.rot90(get_overlay(mask[:,:,steps[i]]), 3), cmap="gnuplot2", alpha=0.4, vmin=0, vmax=2.5)   
+            axs[1].imshow(np.rot90(image[:,:,steps[i]], 3), cmap="gray")
+            axs[2].imshow(np.rot90(mask[:,:,steps[i]], 3), cmap="gnuplot2", interpolation=None, vmin=0, vmax=2.5)   
 
         for ax in axs.ravel():
             ax.set_axis_off()
@@ -170,21 +174,11 @@ def export_plot(image, mask, prediction=None, mask_only=False,
         if epoch is not None:
             i = epoch
 
-        plt.savefig(export_path + f"/{i}.png")
+        plt.savefig(export_path + f"/{i}.png", dpi=600)
         plt.close()        
 
 def get_overlay(img):
     return np.ma.masked_where(img==0, img)
-
-def calc_dsc(pred_mask, mask):
-    # return compute_generalized_dice(pred_mask.detach().cpu(), mask.detach().cpu())
-    mask=mask.detach().cpu().numpy()
-    smooth=1e-5
-    intersection=(pred_mask*mask).sum()
-    return (2.*intersection+smooth)/(pred_mask.sum()+mask.sum()+smooth)
-
-def calc_hd95(pred_mask, mask):
-    return compute_hausdorff_distance(pred_mask.detach().cpu(), mask.detach().cpu(), percentile=95.0)
 
 def prediction_to_mask(prediction):
     """
@@ -194,6 +188,8 @@ def prediction_to_mask(prediction):
     return np.argmax(prob.detach().cpu().squeeze(), axis=0)
 
 def plot_3D_mesh(volume_obj):
+    """Plots 3D mesh from Volume object for visualization.
+    """
     import meshlib.mrmeshpy as mr
     import meshlib.mrmeshnumpy as mrn
     import open3d as o3d
@@ -204,8 +200,7 @@ def plot_3D_mesh(volume_obj):
     mr.saveMesh(mesh, "visualization/volume.stl")
     mesh = o3d.io.read_triangle_mesh("visualization/volume.stl")
     mesh = mesh.compute_vertex_normals()
-    mesh.paint_uniform_color([119, 0, 255])
-
+    mesh.paint_uniform_color([119, 0, 255]) # Color volume purple ish
 
     simpleVolume2 = mrn.simpleVolumeFrom3Darray(volume_obj.mask_spine.numpy())
     floatGrid2 = mr.simpleVolumeToDenseGrid(simpleVolume2)
@@ -213,5 +208,8 @@ def plot_3D_mesh(volume_obj):
     mr.saveMesh(mesh2, "visualization/spine.stl")
     mesh2 = o3d.io.read_triangle_mesh("visualization/spine.stl")
     mesh2 = mesh2.compute_vertex_normals()
-    mesh2.paint_uniform_color([1, 0.756, 0.239])
+    mesh2.paint_uniform_color([1, 0.756, 0.239]) # Color spine yellow ish
+    mesh3 = mesh2+mesh
+    o3d.io.write_triangle_mesh("visualization/both_mesh_colored.ply", mesh3)
+    print(f"Exported to visualization/")
     o3d.visualization.draw_geometries([mesh, mesh2])

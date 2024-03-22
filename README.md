@@ -141,8 +141,14 @@ The config file is in `.json` file format and contains parameters used for data 
 ```
 
 ### Dataset and annotation
-Describe dataset. Modality and T2 weighted etc. Gaps. Patient info. Source. Physical spacings. diff dimensions each subject.
-Annotation anatomical boundaries (our definition). Mention 3D slicer.
+Data was obtained at the UMC Utrecht. The data included 19 T2w MRI from adult volunteers and from 19 children between 8 and 10 years. The amount of image slices varied from 12 to 17 slices, with a slice thickness of 4 mm and total gaps ranging from 20 to 25 mm. Pixel spacing ranged from 0.46875 to 0.625 mm. All pixels were isotropic. 
+
+The spinal length was defined between the level of the top of the sternum and T12. The definition of T12 was primarily based on the median arcuate ligament. The most caudal plane with some ventral covering of the aorta was defined as T12. This was done regardless of if the vertebral body was visible. The caudal part of T12 is not always covered by the median arcuate ligament. Therefore, for a second check, the presence of attached ribs and the shape of the vertebrae were also considered.
+During inspiration the median arcuate ligament moves 8 mm caudally (https://doi.org/10.5555/uri:pii:003960607390305X). Therefore we do introduce an uncertainty, but given our radiological experience this is probably better than defining T12 based only on vertebral anatomy. 
+The most cranial visible part of the sternum was identified and used as the top border of the spinal length. This slice was also used as the top border for the definition of trunk volume. The bottom border was defined as the most cranial plane where both kidneys were visible. 
+
+Using these borders segmentations of the volume inside the thoracic cage or abdominal cavity were made. For the spinal length the borders of the vertebral bodies were used. All segmentations were made using 3D Slicer. 
+
 
 ### Data preprocessing, augmentation and splitting
 

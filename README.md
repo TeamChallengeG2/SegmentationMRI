@@ -145,7 +145,7 @@ Data was obtained at the UMC Utrecht. The data included 19 T2w MRI from adult vo
 
 The spinal length was defined between the level of the top of the sternum and T12. The definition of T12 was primarily based on the median arcuate ligament. The most caudal plane with some ventral covering of the aorta was defined as T12. This was done regardless of if the vertebral body was visible. The caudal part of T12 is not always covered by the median arcuate ligament. Therefore, for a second check, the presence of attached ribs and the shape of the vertebrae were also considered.
 During inspiration the median arcuate ligament moves 8 mm caudally (https://doi.org/10.5555/uri:pii:003960607390305X). Therefore we do introduce an uncertainty, but given our radiological experience this is probably better than defining T12 based only on vertebral anatomy. 
-The most cranial visible part of the sternum was identified and used as the top border of the spinal length. This slice was also used as the top border for the definition of trunk volume. The bottom border was defined as the most cranial plane where both kidneys were visible. 
+The most cranial visible part of the sternum was identified and used as the top border of the spinal length. This slice was also used as the top border for the definition of thoracic volume. The bottom border was defined as the most cranial plane where both kidneys were visible. 
 
 Using these borders segmentations of the volume inside the thoracic cage or abdominal cavity were made. For the spinal length the borders of the vertebral bodies were used. All segmentations were made using 3D Slicer. 
 
@@ -298,3 +298,6 @@ For left/right/anterior/posterior distances --> take most X pixel instead of CoM
 
 ### Proposal part 1
 [Link](TC_group2_part1.pdf) to paper.
+
+## Discussion
+In the provided dataset there were several pelvic kidneys and a horseshoe kidney. Given the incidence of pelvic kidneys (1 in 1000 https://www.ncbi.nlm.nih.gov/books/NBK563239/) this is a notable difference. Therefore our definition of the lower boundry for the thoracic volume might not be fully accurate. 

@@ -313,7 +313,9 @@ For left/right/anterior/posterior distances --> take most X pixel instead of CoM
 
 ## Discussion
 The median arcuate ligament is formed by the right and left muscular extension (crus) of the diafragm. These crus attach the diafragm to L2 on the left and L3 on the right. The ligament is at the level of T12 and we thought it would stay around there during growth due to the attachment of the diafragm to the surrounding vertebrae. Therefore it would be a good indicator of where T12 is. We did however not find any literature about this. 
+
 During inspiration the median arcuate ligament moves 8 mm caudally [[1]](#bibliography). Therefore we do introduce an uncertainty, but given our radiological experience this is probably better than defining T12 based only on vertebral anatomy. 
+
 In the provided dataset there were several pelvic kidneys and a horseshoe kidney. Given the incidence of pelvic kidneys (1 in 1000 [[2]](#bibliography)) this is a notable difference. Therefore our definition of the lower boundry for the thoracic volume might not be fully accurate. 
 
 

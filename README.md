@@ -161,6 +161,9 @@ During inspiration the median arcuate ligament moves 8 mm caudally [[1]](#biblio
 The most cranial visible part of the sternum was identified and used as the top border of the spinal length. This slice was also used as the top border for the definition of thoracic volume. The bottom border was defined as the most cranial plane where both kidneys were visible. 
 
 Using these borders segmentations of the volume inside the thoracic cage or abdominal cavity were made. For the spinal length the borders of the vertebral bodies were used. All segmentations were made using 3D Slicer. 
+![image](https://github.com/TeamChallengeG2/SegmentationMRI/assets/159581756/6df8aae2-f3ae-4908-89bc-d111647b95c9)![image](https://github.com/TeamChallengeG2/SegmentationMRI/assets/159581756/f8d43de9-974d-4ad8-872a-004893eaa512)
+
+
 
 
 ### Data preprocessing, augmentation and splitting

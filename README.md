@@ -129,10 +129,10 @@ The config file is in `.json` file format and contains parameters used for data 
 {
     "dataloader": {
         "data_dir": "data/",                // path to .nrrd directory
-        "splitratio": [1, 0, 0],            // split ratio train, val, test
-        "normalize": false,                 // boolean value for normalization
+        "splitratio": [0.7, 0.1, 0.2],      // split ratio train, val, test
+        "normalize": true,                  // boolean value for normalization
         "extension": ".nrrd",               // extension of data files
-        "LP_dimension": 160,                // dimension after resample in LP
+        "LP_dimension": 240,                // dimension after resample in LP
         "S_dimension": 16,                  // dimension after resample in S
         "rotation_angle": 10,               // rotation angle, set to 0 for no aug    
         "N_classes": 3                      // number of classes
@@ -142,6 +142,7 @@ The config file is in `.json` file format and contains parameters used for data 
         "batch_size": 1,                    // batch size
         "device": "cuda",                   // selected device for training
         "epochs": 100,                      // number of epochs 
+        "decay_lr_after": 100,              // lambda decay after epochs 
         "lr": 5e-4,                         // learning rate
         "loss_fn": "CrossEntropyLoss"       // loss function used for training
     },
@@ -167,9 +168,9 @@ Using these borders segmentations of the volume inside the thoracic cage or abdo
 
 ### Data preprocessing, augmentation and splitting
 
-In order to improve generalization and robustness of the model, we perform data augmentation using geometric transformations. Since our dataset consists of axial slices with spacings of 24 mm in the inferior-superior axis, we will only use small random rotations in the range of -10 to 10 degrees around this axis. The ratio of splitting the data into training, validation and testing set is `0.6:0.1:0.3`. To avoid data contamination, no augmentation is performed on the test set.
+In order to improve generalization and robustness of the model, we perform data augmentation using geometric transformations. Since our dataset consists of axial slices with spacings of 24 mm in the inferior-superior axis, we will only use small random rotations in the range of -10 to 10 degrees around this axis. The ratio of splitting the data into training, validation and testing set is `0.7:0.1:0.2`. To avoid data contamination, no augmentation is performed on the test set.
 
-Additionally, one of the characteristics of the U-Net is that the spatial dimensions of the input are reduced by a factor 2 in each encoder block. More specifically, each dimension must be divisible by $2^n$ where $n$ is the total number of pooling operators in the encoding path. As such, we resampled the depth of the original MRI image to 16, using cubic spline interpolation. The corresponding masks are resampled to the same dimension using nearest-neighbor interpolation. Furthermore, due to computational resources, we also resample the axial dimensions from 640 to 160/320. The new physical spacings are recalculated and stored, which are used for the volume and spinal length calculations in subsequent analysis.
+Additionally, one of the characteristics of the U-Net is that the spatial dimensions of the input are reduced by a factor 2 in each encoder block. More specifically, each dimension must be divisible by $2^n$ where $n$ is the total number of pooling operators in the encoding path. As such, we resampled the depth of the original MRI image to 16, using cubic spline interpolation. The corresponding masks are resampled to the same dimension using nearest-neighbor interpolation. Furthermore, due to computational resources, we also resample the axial dimensions from 640 to 240. The new physical spacings are recalculated and stored, which are used for the volume and spinal length calculations in subsequent analysis.
 
 ### 3D U-net architecture
 
@@ -259,7 +260,7 @@ Estimated Total Size (MB): 2808.95
 </details>
 
 ### Model output
-As mentioned above, given an input of `(1, 160, 160, 16)` the output is of shape `(3, 160, 160, 16)` where the channel (dim=0) represent the logits. The logits are normalized using a Softmax function, ensuring that the voxel class probabilities sum to 1, defined as:
+Given an input of `(1, 160, 160, 16)` the output is of shape `(3, 160, 160, 16)` where the channel (dim=0) represent the logits. The logits are normalized using a Softmax function, ensuring that the voxel class probabilities sum to 1, defined as:
 
 ${\sigma (\mathbf {z})\_{i}= {\frac {e^{z_{i}}}{\sum_{j=1}^ {N} e^{z_j}}}\ \ {\text{ for }}i=1,\dotsc ,N}$
 
@@ -272,33 +273,44 @@ ${CE(p,q)=-\sum _{x\in {\mathcal {X}}}p(x) \log q(x)}$.
  
 where $p$ is the ground truth probability and $q$ the predicted probability.
  
-The training time is `xxxx` s and the weights corresponding to the best validation score is saved and used for subsequent calculations. A visualization of the training process is shown below. 
-![Training visualization](visualization/visual.gif)
+The training time is `6h`  and the weights corresponding to the best validation score is saved and used for subsequent calculations. A visualization of the training process is shown below. 
+
 
 ### Model testing
-The performance of the trained segmentation model is evaluated on the test set. This test set contains 11 random subjects, without any transformation applied. The qualitative and quantitative results are shown below.
+The performance of the trained segmentation model is evaluated on the test set. This test set contains 7 random subjects, without any transformation applied. The qualitative and quantitative results are shown below.
 #### Quantitative results
-For quantitative results we compute the Dice Similarity Score (DSC), two-sided Hausdorff Distance (HD), True Positive Rate (TPR), False Positive Rate (FPR) and False Negative Rate (FNR). The tabel below is an overview of the computed metrics (↑ higher is better, ↓ lower is better). 
+For quantitative results we compute the Dice Similarity Score (DSC), two-sided Hausdorff Distance (HD) and its 95th percentile, precision and recall. The tabel below is an overview of the computed metrics (↑ higher is better, ↓ lower is better). The upper table is for the volume prediction and bottom for the spine.
 
-|Filename	|Volume [mm^3]|	Volume [L]|	DSC↑|	HD↓	|HD95↓|	FPR|
-|-------------- | -------------- | -------------- | -------------- | -------------- | -------------- | -------------- | 
-|  EBS_1 | 2819175 | 2.82 | 0.87 | 25.622 | 25.5 | 0.0 |
-| Volunteer 6 | 6825093 | 6.83 | 0.987 | 18.75 | 1.875 | 0.002 | 
-| EBS19 | 2647950 | 2.65 | 0.983 | 5.0 | 2.5 | 0.0 | 
-| EBS14 | 2789100 | 2.79 | 0.973 | 25.5 | 2.5 | 0.001 | 
-| Volunteer 10 | 8782300 | 8.78 | 0.986 | 27.188 | 1.875 | 0.005 | 
-| Volunteer 11 | 5715370 | 5.72 | 0.991 | 5.303 | 0.0 | 0.001 | 
-| EBS_6 | 1684375 | 1.68 | 0.94 | 25.5 | 25.5 | 0.0 | 
-| EBS15 | 2524050 | 2.52 | 0.958 | 25.5 | 25.5 | 0.002 | 
-| EBS12 | 3180375  | 3.18 | 0.903 | 25.986 | 25.5 | 0.008 | 
-| Volunteer 28 | 4697850 | 4.7 | 0.99 | 7.071 | 0.0 | 0.001 | 
-| EBS_5 | 1939074 | 1.94 | 0.942 | 25.5 | 25.5 | 0.0 |
+| |Filename	 |	Volume [L]|	DSC↑|  HD↓  |HD95↓     |	Precision| Recall |
+|-|-------------|-------------|--------|-------|----------|----------|--------| 
+|0|Volunteer 10 |10.10	     |0.891   |54.375 |27.188	   |0.828     |0.964   |
+|1|Volunteer 11 |6.03	     |0.975   |27.188 |1.768	   |0.953	    |0.998   |
+|2|EBS_6	      |2.42	     |0.874   |179.408|25.500	   |0.779	    |0.997   |
+|3|EBS15	      |2.68	     |0.962   |25.717 |3.333	   |0.928	    |0.999   |
+|4|EBS12	      |3.02	     |0.967   |25.500 |2.357	   |0.936	    |0.999   |
+|5|Volunteer 28 |4.93	     |0.981   |25.500 |1.667	   |0.964	    |0.999   |
+|6|EBS_5	      |2.42	     |0.943   |25.554 |25.500	   |0.892	    |1.000   |
+
+| |Filename	 |Length [cm]  |	DSC↑|  HD↓  |HD95↓     |	Precision| Recall |
+|-|-------------|-------------|--------|-------|----------|----------|--------| 
+|0|Volunteer 10 |30.6	     |0.794   |55.428 |27.559	   |0.679	    |0.955   |
+|1|Volunteer 11 |28.4	     |0.852   |27.245 |4.507	   |0.743	    |1.000   |
+|2|EBS_6	      |22.8	     |0.828   |26.039 |4.714	   |0.713	    |0.989   |
+|3|EBS15	      |17.6	     |0.869   |8.333  |3.333	   |0.769	    |1.000   |
+|4|EBS12	      |19.6	     |0.837   |13.437 |4.714	   |0.719	    |1.000   |
+|5|Volunteer 28 |21.5	     |0.860   |25.771 |25.500	   |0.755	    |1.000   |
+|6|EBS_5	      |20.2	     |0.878   |25.609 |3.333	   |0.783	    |1.000   |
+
+
 
 #### Qualitative results
-An example of the qualitative results are shown below. The segmentation in `Fig X`. corresponds to subject EBS_1, which has the worst DSC score and HD distance. `Fig X.` corresponds to subject EBS_5, which has the best DSC and HD.
+An example of the qualitative results are shown below. The segmentation corresponds to subject EBS_6, which has the lowest DSC score and HD distance. The corresponding low precision and high recall (for volume) also implies that a large amount of the voxels predicted as volume are incorrectly classified as volume.
+![EBS_6](visualization/EBS_6_test.gif)
 
+On the other hand, the segmentation of Volunteer 11 shown below shows that the model is able to somewhat correctly predict where the spine segmentation should start.
+![V11](visualization/V11_test.gif)
 ### Postprocessing
-The trained segmentation model is used to make predictions about the corresponding segmentation mask. The output masks have physical gaps of roughly 20 mm (different per subject) between the slices along the inferior-superior axis and are upsampled such that there are no physical gaps in the mask, with the assumption that the slice thickness is 4 mm. A median filter is then applied to smoothen out rough edges. The resulting 3D view of volume and spine can be found [here](visualization/mesh_prediction.stl).
+The trained segmentation model is used to make predictions about the corresponding segmentation mask. The output masks have physical gaps of roughly 20 mm (different per subject) between the slices along the inferior-superior axis and are upsampled such that there are no physical gaps in the mask, with the assumption that the slice thickness is 4 mm. A median filter is then applied to smoothen out rough edges. The resulting 3D view of volume and spine can be seen below. ![mesh](visualization/v11_mesh.gif).
 #### Chest volume
 To calculate the chest volume, we count the number of voxels corresponding to "volume" in our upsampled 3D mesh and multiply it with the physical volume of a single voxel. The results for calculated volumes are shown in the table above.
 

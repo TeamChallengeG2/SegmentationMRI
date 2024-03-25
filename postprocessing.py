@@ -35,7 +35,7 @@ class Volume():
                         gdth_img=self.mask.numpy(),
                         pred_img=self.prediction_mask.numpy(),
                         spacing=spacings,
-                        metrics=['hd', 'hd95','dice','fpr','fnr'])
+                        metrics=['hd', 'hd95','dice','fpr','fnr', 'precision', 'recall'])
         
         self.mask_volume, self.mask_spine = self.upsample(self.image, self.mask, self.prediction_mask)
         nr_voxels = np.count_nonzero(self.mask_volume == 1) # Count volume voxels
@@ -153,28 +153,36 @@ def calc_scores(dataset, model):
                      round(volume_L, 2), 
                      round(metric["dice"][1], 3), 
                      round(metric["hd"][1], 3), 
-                     round(metric["hd95"][1], 3)])
+                     round(metric["hd95"][1], 3),
+                     round(metric["precision"][1], 3),
+                     round(metric["recall"][1], 3)])
         
         data_spinal_l.append([filefolder,
                      round(spinal_length_cm, 1), 
                      round(metric["dice"][2], 3), 
                      round(metric["hd"][2], 3), 
-                     round(metric["hd95"][2], 3)])    
+                     round(metric["hd95"][2], 3),   
+                     round(metric["precision"][2], 3),
+                     round(metric["recall"][2], 3)])
         
     return data_volume, data_spinal_l
 
 def show_table(pd_data):
-    df = pd.DataFrame(pd_data[0], columns=["Filename", 
-                                        "Volume [L]", 
-                                        "DSC\u2191", 
-                                        "HD\u2193",
-                                        "HD95\u2193"])
+    df = pd.DataFrame(pd_data[0], columns=["Filename",
+                                           "Volume [L]",
+                                           "DSC\u2191", 
+                                           "HD\u2193",
+                                           "HD95\u2193",
+                                           "Precision",
+                                           "Recall"])
     
-    df2 = pd.DataFrame(pd_data[1], columns=["Filename", 
-                                    "Length [cm]", 
-                                    "DSC\u2191", 
-                                    "HD\u2193",
-                                    "HD95\u2193"])
+    df2 = pd.DataFrame(pd_data[1], columns=["Filename",
+                                            "Length [cm]",
+                                            "DSC\u2191",
+                                            "HD\u2193",
+                                            "HD95\u2193",
+                                            "Precision",
+                                            "Recall"])
     
     display(df)
     display(df2)

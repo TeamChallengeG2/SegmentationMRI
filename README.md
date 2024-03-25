@@ -1,6 +1,6 @@
 # Team Challenge - Medical Image Analysis
 
-This repository contains a PyTorch implementation used for the Team Challenge project 2023-2024, hosted by the University of Technology Eindhoven and University Utrecht. The objective is to quantify the chest volume and/or spinal length in MR images. To this end, we perform voxel-wise semantic segmentation of the *spine* and the *chest volume*, adhering to our definitions. Our method applies the 3D U-Net on provided MRI data from the ScoliStorm project. The predicted segmentations are then used to quantify the volume and length. The workflow and usage of our method is described below. 
+This repository contains a PyTorch implementation used for the Team Challenge project 2023-2024, hosted by the University of Technology Eindhoven and University Utrecht. The objective is to quantify the chest volume and/or spinal length in MR images. To this end, we perform voxel-wise semantic segmentation of the *spine* and the *chest volume*, adhering to our definitions. Our method applies the 3D U-Net on provided MRI data from UMC Utrecht. The predicted segmentations are used to quantify the volume and spinal length. The workflow and usage of our method is described below. 
 ## Group 2
 
 * Romy Buijs
@@ -165,7 +165,7 @@ Using these borders segmentations of the volume inside the thoracic cage or abdo
 
 ### Data preprocessing, augmentation and splitting
 
-In order to improve generalization and robustness of the model, we perform data augmentation using geometric transformations. Since our dataset consists of axial slices with spacings of 24 mm in the inferior-superior axis, we will only use small random rotations in the range of -10 to 10 degrees around this axis. This effectively doubles the amount of data in the training set. The ratio of splitting the data into training, validation and testing set is 0.6:0.1:0.3. To avoid data contamination, no augmentation is performed on the test set.
+In order to improve generalization and robustness of the model, we perform data augmentation using geometric transformations. Since our dataset consists of axial slices with spacings of 24 mm in the inferior-superior axis, we will only use small random rotations in the range of -10 to 10 degrees around this axis. The ratio of splitting the data into training, validation and testing set is `0.6:0.1:0.3`. To avoid data contamination, no augmentation is performed on the test set.
 
 Additionally, one of the characteristics of the U-Net is that the spatial dimensions of the input are reduced by a factor 2 in each encoder block. More specifically, each dimension must be divisible by $2^n$ where $n$ is the total number of pooling operators in the encoding path. As such, we resampled the depth of the original MRI image to 16, using cubic spline interpolation. The corresponding masks are resampled to the same dimension using nearest-neighbor interpolation. Furthermore, due to computational resources, we also resample the axial dimensions from 640 to 160/320. The new physical spacings are recalculated and stored, which are used for the volume and spinal length calculations in subsequent analysis.
 
@@ -173,7 +173,7 @@ Additionally, one of the characteristics of the U-Net is that the spatial dimens
 
 ![3dunet](visualization/unet.png)
 
-For the segmentation task, we have chosen to utilize the 3D U-Net model. The U-Net is a commonly used architecture in the domain of medical imaging. Although there are varying implementations, the 3D U-Net for example has three encoding and decoding blocks (opposed to four in 2D U-Net). The encoding path captures features through convolutional and max-pooling layers, while the decoding path reconstructs from the compressed representation using transpose-convolution layers combined with skip connections. Skip connections preserve spatial information by concatenating low-level feature maps with high-level feature maps. 
+For the segmentation task, the 3D U-Net model is applied. The U-Net is a commonly used architecture in the domain of medical imaging. Although there are varying implementations, the 3D U-Net for example has three encoding and decoding blocks (opposed to four in 2D U-Net). The encoding path captures features through convolutional and max-pooling layers, while the decoding path reconstructs from the compressed representation using transpose-convolution layers combined with skip connections. Skip connections preserve spatial information by concatenating low-level feature maps with high-level feature maps. 
 
 The *input* of the model is a grayscale image with shape `(1, 160, 160, 16)` (C, H, W, D). Since the objective is to make a prediction for a voxel belonging to a certain class, the output must contain 3 channels (`N_classes=3`: background, volume, spine). The channels correspond to the logits of a certain class. For the specific architecture refer to <a href="#3dunet">Fig. 1</a> and the model summary details below.
 
@@ -302,12 +302,7 @@ To calculate the chest volume, we count the number of voxels corresponding to "v
 
 #### Spinal length
 
-1. Calculate center of mass each pixel
-2. Connect center of masses
-3. Spline interpolation through points?
-4. Calculate distance 
-
-For left/right/anterior/posterior distances --> take most X pixel instead of CoM?
+The spinal length is calculated using the center of mass of the upsampled spine in each slice. The individual distances between center of masses between two slices is calculated, and corrected for physical spacings. These distances are then summed up. 
 
 ## Discussion
 In the provided dataset there were several pelvic kidneys and a horseshoe kidney. Given the incidence of pelvic kidneys (1 in 1000 [[2]](#bibliography)) this is a notable difference. Therefore our definition of the lower boundry for the thoracic volume might not be fully accurate. 

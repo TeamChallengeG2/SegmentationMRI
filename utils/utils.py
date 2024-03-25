@@ -187,7 +187,7 @@ def prediction_to_mask(prediction):
     prob = torch.softmax(prediction, dim=1)
     return np.argmax(prob.detach().cpu().squeeze(), axis=0)
 
-def plot_3D_mesh(volume_obj):
+def plot_3D_mesh(volume_obj, length=False):
     """Plots 3D mesh from Volume object for visualization.
     """
     import meshlib.mrmeshpy as mr
@@ -202,14 +202,34 @@ def plot_3D_mesh(volume_obj):
     mesh = mesh.compute_vertex_normals()
     mesh.paint_uniform_color([119, 0, 255]) # Color volume purple ish
 
-    simpleVolume2 = mrn.simpleVolumeFrom3Darray(volume_obj.mask_spine.numpy())
-    floatGrid2 = mr.simpleVolumeToDenseGrid(simpleVolume2)
-    mesh2 = mr.gridToMesh(floatGrid2 , mr.Vector3f(0.1, 0.1, 0.1), 0.5)
-    mr.saveMesh(mesh2, "visualization/spine.stl")
-    mesh2 = o3d.io.read_triangle_mesh("visualization/spine.stl")
-    mesh2 = mesh2.compute_vertex_normals()
-    mesh2.paint_uniform_color([1, 0.756, 0.239]) # Color spine yellow ish
-    mesh3 = mesh2+mesh
-    o3d.io.write_triangle_mesh("visualization/both_mesh_colored.ply", mesh3)
+    if length:
+        coords_com = volume_obj.coords_com
+        mask_length = np.zeros(volume_obj.mask_spine.shape)
+        for i in range(len(coords_com)):
+            if not np.isnan(coords_com[i][0]):
+                xyz = coords_com[i].astype(int)
+                mask_length[xyz[0], xyz[1], xyz[2]] = 1
+
+        simpleVolume3 = mrn.simpleVolumeFrom3Darray(mask_length)
+        floatGrid3 = mr.simpleVolumeToDenseGrid(simpleVolume3)
+        mesh3 = mr.gridToMesh(floatGrid3 , mr.Vector3f(0.1, 0.1, 0.1), 0.5)
+        mr.saveMesh(mesh3, "visualization/length.stl")
+        mesh3 = o3d.io.read_triangle_mesh("visualization/length.stl")
+        mesh3 = mesh3.compute_vertex_normals()
+        mesh3.paint_uniform_color([1, 0, 0]) # 
+        o3d.visualization.draw_geometries([mesh, mesh3])
+    else:
+        simpleVolume2 = mrn.simpleVolumeFrom3Darray(volume_obj.mask_spine.numpy())
+        floatGrid2 = mr.simpleVolumeToDenseGrid(simpleVolume2)
+        mesh2 = mr.gridToMesh(floatGrid2 , mr.Vector3f(0.1, 0.1, 0.1), 0.5)
+        mr.saveMesh(mesh2, "visualization/spine.stl")
+        mesh2 = o3d.io.read_triangle_mesh("visualization/spine.stl")
+        mesh2 = mesh2.compute_vertex_normals()
+        mesh2.paint_uniform_color([1, 0.756, 0.239]) # Color spine yellow ish
+        mesh_color = mesh2+mesh
+        o3d.io.write_triangle_mesh("visualization/both_mesh_colored.ply", mesh_color)
+        o3d.visualization.draw_geometries([mesh, mesh2])
+    
     print(f"Exported to visualization/")
-    o3d.visualization.draw_geometries([mesh, mesh2])
+
+# %%

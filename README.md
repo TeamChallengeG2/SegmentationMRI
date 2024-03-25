@@ -311,6 +311,7 @@ On the other hand, the segmentation of Volunteer 11 shown below shows that the m
 ![V11](visualization/V11_test.gif)
 ### Postprocessing
 The trained segmentation model is used to make predictions about the corresponding segmentation mask. The output masks have physical gaps of roughly 20 mm (different per subject) between the slices along the inferior-superior axis and are upsampled such that there are no physical gaps in the mask, with the assumption that the slice thickness is 4 mm. A median filter is then applied to smoothen out rough edges. The resulting 3D view of volume and spine can be seen below.
+
 ![mesh](visualization/V11_mesh.gif)
 #### Chest volume
 To calculate the chest volume, we count the number of voxels corresponding to "volume" in our upsampled 3D mesh and multiply it with the physical volume of a single voxel. The results for calculated volumes are shown in the table above.

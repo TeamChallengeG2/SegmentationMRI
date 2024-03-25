@@ -156,11 +156,13 @@ The config file is in `.json` file format and contains parameters used for data 
 ### Dataset and annotation
 Data was obtained at the UMC Utrecht. The data included 19 T2w MRI from adult volunteers and from 19 children between 8 and 10 years. The amount of image slices varied from 12 to 17 slices, with a slice thickness of 4 mm and total gaps ranging from 20 to 25 mm. Pixel spacing ranged from 0.46875 to 0.625 mm. All pixels were isotropic. 
 
-The spinal length was defined between the level of the top of the sternum and T12. The definition of T12 was primarily based on the median arcuate ligament. The most caudal plane with some ventral covering of the aorta was defined as T12. This was done regardless of if the vertebral body was visible. The caudal part of T12 is not always covered by the median arcuate ligament. Therefore, for a second check, the presence of attached ribs and the shape of the vertebrae were also considered.
-During inspiration the median arcuate ligament moves 8 mm caudally [[1]](#bibliography). Therefore we do introduce an uncertainty, but given our radiological experience this is probably better than defining T12 based only on vertebral anatomy. 
+The spinal length was defined between the level of the top of the sternum and T12. The definition of T12 was primarily based on the median arcuate ligament. The most caudal plane with some ventral covering of the aorta was defined as T12. This was done regardless of if the vertebral body was visible. The caudal part of T12 is not always covered by the median arcuate ligament. Therefore, for a second check, the presence of attached ribs, the shape of the vertebrae and its relation to the other vertebrae were also considered.
 The most cranial visible part of the sternum was identified and used as the top border of the spinal length. This slice was also used as the top border for the definition of thoracic volume. The bottom border was defined as the most cranial plane where both kidneys were visible. 
 
 Using these borders segmentations of the volume inside the thoracic cage or abdominal cavity were made. For the spinal length the borders of the vertebral bodies were used. All segmentations were made using 3D Slicer. 
+![image](https://github.com/TeamChallengeG2/SegmentationMRI/assets/159581756/6df8aae2-f3ae-4908-89bc-d111647b95c9)![image](https://github.com/TeamChallengeG2/SegmentationMRI/assets/159581756/f8d43de9-974d-4ad8-872a-004893eaa512)
+
+
 
 
 ### Data preprocessing, augmentation and splitting
@@ -305,7 +307,12 @@ To calculate the chest volume, we count the number of voxels corresponding to "v
 The spinal length is calculated using the center of mass of the upsampled spine in each slice. The individual distances between center of masses between two slices is calculated, and corrected for physical spacings. These distances are then summed up. 
 
 ## Discussion
+The median arcuate ligament is formed by the right and left muscular extension (crus) of the diafragm. These crus attach the diafragm to L2 on the left and L3 on the right. The ligament is at the level of T12 and we thought it would stay around there during growth due to the attachment of the diafragm to the surrounding vertebrae. Therefore it would be a good indicator of where T12 is. We did however not find any literature about this. 
+
+During inspiration the median arcuate ligament moves 8 mm caudally [[1]](#bibliography). Therefore we do introduce an uncertainty, but given our radiological experience this is probably better than defining T12 based only on vertebral anatomy. 
+
 In the provided dataset there were several pelvic kidneys and a horseshoe kidney. Given the incidence of pelvic kidneys (1 in 1000 [[2]](#bibliography)) this is a notable difference. Therefore our definition of the lower boundry for the thoracic volume might not be fully accurate. 
+
 
 ## Bibliography
 [1] Stewart R. Reuter, M.D. Eugene F. Bernstein, M.D., Ph.D. "The anatomic basis for respiratory variation in median arcuate ligament compression of the celiac artery". DOI:https://doi.org/10.5555/uri:pii:003960607390305X

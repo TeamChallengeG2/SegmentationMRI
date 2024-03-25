@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import time
 from tqdm import tqdm
 from torch.utils.data import DataLoader
+from torch.optim.lr_scheduler import LambdaLR
 from logger import Logger
 from utils import load_config
 
@@ -28,14 +29,13 @@ class Trainer():
         self.device = torch.device(config["device"])
         self.batch_size = config["batch_size"]
         self.epochs = config["epochs"] # Total epochs
-        self.loss_fn = getattr(nn, config["loss_fn"])() # CrossEntropyLoss
+        self.Loss_fn = getattr(nn, config["loss_fn"]) # CrossEntropyLoss
         self.model = model.to(self.device)
         self.logger = Logger(config=cfg, save=True)
+        self.decay_lr_after = config["decay_lr_after"]
         self.optimizer = torch.optim.Adam(params=self.model.parameters(),
                                           lr=config["lr"])
-        self.schedular=torch.optim.lr_scheduler.MultiStepLR(self.optimizer, 
-                                                            milestones=[5,10,15],
-                                                            gamma=0.5)
+        self.scheduler = LambdaLR(optimizer=self.optimizer, lr_lambda=self.lr_lambda)
         if visualize_img: # This image is consistently used to visualize during training
             self.visualize_img = visualize_img
         else:
@@ -59,10 +59,12 @@ class Trainer():
             self.logger.append_val_loss(val_loss.detach().cpu().item())
             self.logger.plot(epoch)
             self.visualize(epoch)
-            if val_loss<best_val_loss:
-                best_val_loss=val_loss
-                if self.logger.save:
-                    self.logger.save_weights(self.model, epoch)
+            # if val_loss<best_val_loss:
+            #     best_val_loss=val_loss
+            #     if self.logger.save:
+            #         self.logger.save_weights(self.model, epoch)
+            self.logger.save_weights(self.model, epoch)
+
 
         print('Training finished, took {:.2f}s'.format(time.time() - training_start_time))
         self.logger.append_time_elapsed(time.time() - training_start_time) # Save training duration
@@ -79,6 +81,10 @@ class Trainer():
                 img = img.to(self.device)
                 mask = mask.to(self.device)
                 prediction = self.model(img.unsqueeze(0)) # Forward pass
+                weights = torch.bincount(mask.type(torch.int).view(-1)).type(torch.float)
+                weights = 1/weights
+                self.loss_fn = self.Loss_fn(weight=weights)
+                # self.loss_fn = self.Loss_fn()
                 loss = self.loss_fn(prediction, mask.long())
                 """Loss input: (batch,C,h,w,d) C->LOGITS and (batch,C,h,w,d) C->CLASS VALUES"""
                 loss_data_list.append(loss.cpu().detach().item())                
@@ -92,6 +98,7 @@ class Trainer():
         else:
             self.logger.append_valdata_loss(loss_data_list)
 
+        self.scheduler.step()
         del img, mask
         return sum(loss_epoch_list) / len(loss_epoch_list) # Average loss one epoch
     
@@ -102,6 +109,14 @@ class Trainer():
         mask = self.visualize_img[1]
         logits = self.model(img.unsqueeze(0).unsqueeze(0).to(self.device))
         self.logger.export_train(epoch, img, mask, logits)
+
+    def lr_lambda(self, the_epoch):
+        """Function for scheduling learning rate"""
+        return (
+            1.0
+            if the_epoch < self.decay_lr_after
+            else 1 - float(the_epoch - self.decay_lr_after) / (self.epochs - self.decay_lr_after)
+        )            
             
 if __name__=="__main__":
     from model.UNet3D import UNet3D

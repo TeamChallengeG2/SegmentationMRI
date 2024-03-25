@@ -3,7 +3,8 @@ import numpy as np
 import pandas as pd
 import seg_metrics.seg_metrics as sg
 from tqdm import tqdm
-from scipy.ndimage import zoom, median_filter
+from scipy.ndimage import zoom, median_filter, center_of_mass
+
 
 class Volume():
     def __init__(self, image, mask, prediction, header):
@@ -20,7 +21,7 @@ class Volume():
         prob = torch.softmax(self.prediction, dim=1)
         return np.argmax(prob.detach().cpu().squeeze(), axis=0)
 
-    def get_volume(self):
+    def get_objective(self):
         """Returns volume in mm^3 for an input image.
 
         Returns:
@@ -34,13 +35,41 @@ class Volume():
                         gdth_img=self.mask.numpy(),
                         pred_img=self.prediction_mask.numpy(),
                         spacing=spacings,
-                        metrics=['hd', 'hd95','dice','recall','fpr','fnr'])
+                        metrics=['hd', 'hd95','dice','fpr','fnr'])
         
         self.mask_volume, self.mask_spine = self.upsample(self.image, self.mask, self.prediction_mask)
         nr_voxels = np.count_nonzero(self.mask_volume == 1) # Count volume voxels
         [L_dim, P_dim, S_dim] = self.get_new_spacings(self.header, self.mask_volume.shape) 
         volume_voxel = L_dim*P_dim*S_dim # Voxel volume
-        return nr_voxels * volume_voxel # Total volume
+        volume_L = (nr_voxels * volume_voxel)/1e6 # Total volume
+        spinal_length_cm = self.get_length()
+        return volume_L, spinal_length_cm
+    
+    def get_length(self):
+        """Calculates the length of spine based on center of masses.
+
+        Returns:
+            float: length in cm
+        """        
+        self.coords_com = list()
+        for i in range(self.mask_spine.shape[2]): # Add indices of center of mass to list
+            com = list(center_of_mass(self.mask_spine.numpy()[:,:,i]))
+            com.append(i)
+            self.coords_com.append(com)
+        
+        self.coords_com = np.array(self.coords_com)
+
+        [L_dim, P_dim, S_dim] = self.get_new_spacings(self.header, self.mask_volume.shape) 
+        distance = 0
+
+        for i in range(len(self.coords_com)-1):
+            # Calculate distance between COM's between 2 slices
+            if (not np.isnan(self.coords_com[i][0])) and (not np.isnan(self.coords_com[i+1][0])):
+                # Calculate physical distance based on voxel-distance
+                physical_distance = [L_dim, P_dim, S_dim] * (self.coords_com[i+1]-self.coords_com[i])
+                distance += np.linalg.norm(physical_distance)
+        
+        return distance/10
 
     def get_new_spacings(self, header, image_shape):
         """Recalculates new spacings between voxels from image dimensions.
@@ -113,37 +142,42 @@ def calc_scores(dataset, model):
     Returns:
         list: containing volume and DSC scores
     """    
-    data = list()
+    data_volume = list()
+    data_spinal_l = list()
     for img, mask, header, filefolder in tqdm(dataset):
         pred = model(img.unsqueeze(0).unsqueeze(0).cuda())
         volume_object = Volume(img, mask, pred, header)
-        volume_mm3 = volume_object.get_volume()
-        volume_L = volume_mm3 / 1e6
+        volume_L, spinal_length_cm = volume_object.get_objective()
         metric = volume_object.metrics[0]
-        data.append([filefolder,
-                     round(volume_mm3, 0), 
+        data_volume.append([filefolder,
                      round(volume_L, 2), 
                      round(metric["dice"][1], 3), 
                      round(metric["hd"][1], 3), 
-                     round(metric["hd95"][1], 3), 
-                     round(metric["recall"][1], 3),
-                     round(metric["fpr"][1], 3),
-                     round(metric["fnr"][1], 3)])
-
-    return data
+                     round(metric["hd95"][1], 3)])
+        
+        data_spinal_l.append([filefolder,
+                     round(spinal_length_cm, 1), 
+                     round(metric["dice"][2], 3), 
+                     round(metric["hd"][2], 3), 
+                     round(metric["hd95"][2], 3)])    
+        
+    return data_volume, data_spinal_l
 
 def show_table(pd_data):
-    df = pd.DataFrame(pd_data, columns=["Filename", 
-                                        "Volume [mm^3]", 
+    df = pd.DataFrame(pd_data[0], columns=["Filename", 
                                         "Volume [L]", 
                                         "DSC\u2191", 
                                         "HD\u2193",
-                                        "HD95\u2193",
-                                        "Recall",
-                                        "FPR",
-                                        "FNR"]) # \u2191
+                                        "HD95\u2193"])
+    
+    df2 = pd.DataFrame(pd_data[1], columns=["Filename", 
+                                    "Length [cm]", 
+                                    "DSC\u2191", 
+                                    "HD\u2193",
+                                    "HD95\u2193"])
+    
     display(df)
-    return df
+    display(df2)
 
 if __name__=="__main__":
     from model.UNet3D import UNet3D

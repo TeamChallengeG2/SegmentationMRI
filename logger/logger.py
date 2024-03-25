@@ -76,7 +76,7 @@ class Logger():
                   "blue", label="Train loss")
         for xe, ye in zip(range(0, len(self.dict["train_individual"])), self.dict["train_individual"]):
                 axes.scatter([xe] * len(ye), ye, c="blue", s=0.1, alpha=0.3)
-        axes.plot(range(0, len(self.dict["val_loss"])), self.dict["val_loss"], 'r-', label="Validation loss")
+        axes.plot(range(0, len(self.dict["val_loss"])), self.dict["val_loss"], 'r-', linewidth=1.0, label="Validation loss")
         for xe, ye in zip(range(0, len(self.dict["val_individual"])), self.dict["val_individual"]):
                 axes.scatter([xe] * len(ye), ye, c="red", s=0.1, alpha=0.3)        
         axes.set_ylim([0, 0.6])

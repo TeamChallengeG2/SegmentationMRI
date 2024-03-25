@@ -2,9 +2,9 @@
     "dataloader": {
         "data_dir": "data/",
         "splitratio": [0.6, 0.1, 0.3],
-        "normalize": false,
+        "normalize": true,
         "extension": ".nrrd",
-        "LP_dimension": 160, 
+        "LP_dimension": 240, 
         "S_dimension": 16,
         "rotation_angle": 10,
         "N_classes": 3
@@ -13,8 +13,9 @@
     "trainer": {
         "batch_size": 1,
         "device": "cuda",
-        "epochs": 200,
-        "lr": 5e-4,
+        "epochs": 150,
+        "decay_lr_after": 100,
+        "lr": 1e-4,
         "loss_fn": "CrossEntropyLoss"
     },
 

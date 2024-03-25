@@ -307,8 +307,6 @@ For quantitative results we compute the Dice Similarity Score (DSC), two-sided H
 An example of the qualitative results are shown below. The segmentation corresponds to subject EBS_6, which has the lowest DSC score and HD distance. The corresponding low precision and high recall (for volume) also implies that a large amount of the voxels predicted as volume are incorrectly classified as volume.
 ![EBS_6](visualization/EBS_6_test.gif)
 
-On the other hand, the segmentation of Volunteer 11 shown below shows that the model is able to somewhat correctly predict where the spine segmentation should start (T12).
-![V11](visualization/V11_slice6.png)
 ### Postprocessing
 The trained segmentation model is used to make predictions about the corresponding segmentation mask. The output masks have physical gaps of roughly 20 mm (different per subject) between the slices along the inferior-superior axis and are upsampled such that there are no physical gaps in the mask, with the assumption that the slice thickness is 4 mm. A median filter is then applied to smoothen out rough edges. The resulting 3D view of volume and spine can be seen below.
 

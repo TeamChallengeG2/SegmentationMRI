@@ -19,6 +19,8 @@ train_set_raw, val_set, test_set = scoliosis_dataset() # Base datasets
 train_set = TransformDataset(base_dataset=train_set_raw) # Augmentation in train dataset only!
 ```
 **2. Load model and weights**
+
+Download weights from: https://filesender.surf.nl/?s=download&token=259f5214-b77a-4920-b3dc-022e25237508
 ```python
 model = UNet3D().cuda()
 model.load_state_dict(torch.load(R"weights.pth")) # Optionally, load weights
@@ -273,7 +275,7 @@ ${CE(p,q)=-\sum _{x\in {\mathcal {X}}}p(x) \log q(x)}$.
  
 where $p$ is the ground truth probability and $q$ the predicted probability.
  
-The training time is `6h`  and the weights corresponding to the best validation score is saved and used for subsequent calculations. A visualization of the training process is shown below. 
+The training time is `6h`  and the weights corresponding to the best validation score is saved and used for subsequent calculations. 
 
 
 ### Model testing

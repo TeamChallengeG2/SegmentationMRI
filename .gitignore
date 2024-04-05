@@ -8,3 +8,4 @@ train_results/*
 **/__pycache__/
 data/*
 **.pyc
+weights.pth

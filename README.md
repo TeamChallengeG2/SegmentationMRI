@@ -327,7 +327,7 @@ To calculate the chest volume, we count the number of voxels corresponding to "v
 The spinal length is calculated using the center of mass of the upsampled spine in each slice. The individual distances between center of masses between two slices is calculated, and corrected for physical spacings. These distances are then summed up. 
 
 ## Discussion
-The median arcuate ligament is formed by the right and left muscular extension (crus) of the diafragm. These crus attach the diafragm to L2 on the left and L3 on the right. The ligament is at the level of T12 and we thought it would stay around there during growth due to the attachment of the diafragm to the surrounding vertebrae. Therefore it would be a good indicator of where T12 is. We did however not find any literature about this. 
+The median arcuate ligament is formed by the right and left muscular extension (crus) of the diafragm. These crus attach the diaphragm to L2 on the left and L3 on the right. The ligament is at the level of T12 and we thought it would stay around there during growth due to the attachment of the diafragm to the surrounding vertebrae. Therefore it would be a good indicator of where T12 is. We did however not find any literature about this. 
 
 During inspiration the median arcuate ligament moves 8 mm caudally [[1]](#bibliography). Therefore we do introduce an uncertainty, but given our radiological experience this is probably better than defining T12 based only on vertebral anatomy. 
 

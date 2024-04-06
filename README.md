@@ -165,7 +165,9 @@ The most cranial visible part of the sternum was identified and used as the top 
 Using these borders segmentations of the volume inside the thoracic cage or abdominal cavity were made. For the spinal length the borders of the vertebral bodies were used. All segmentations were made using 3D Slicer. 
 ![image](https://github.com/TeamChallengeG2/SegmentationMRI/assets/159581756/6df8aae2-f3ae-4908-89bc-d111647b95c9)![image](https://github.com/TeamChallengeG2/SegmentationMRI/assets/159581756/f8d43de9-974d-4ad8-872a-004893eaa512)
 
-
+<p align="center">
+  <img src="visualization/annotation.gif" border=1px/>
+</p>
 
 
 ### Data preprocessing, augmentation and splitting
@@ -175,9 +177,9 @@ In order to improve generalization and robustness of the model, we perform data 
 Additionally, one of the characteristics of the U-Net is that the spatial dimensions of the input are reduced by a factor 2 in each encoder block. More specifically, each dimension must be divisible by $2^n$ where $n$ is the total number of pooling operators in the encoding path. As such, we resampled the depth of the original MRI image to 16, using cubic spline interpolation. The corresponding masks are resampled to the same dimension using nearest-neighbor interpolation. Furthermore, due to computational resources, we also resample the axial dimensions from 640 to 240. The new physical spacings are recalculated and stored, which are used for the volume and spinal length calculations in subsequent analysis.
 
 ### 3D U-net architecture
-
-![3dunet](visualization/unet.png)
-
+<p align="center">
+  <img src="visualization/unet.png" />
+</p>
 For the segmentation task, the 3D U-Net model is applied. The U-Net is a commonly used architecture in the domain of medical imaging. Although there are varying implementations, the 3D U-Net for example has three encoding and decoding blocks (opposed to four in 2D U-Net). The encoding path captures features through convolutional and max-pooling layers, while the decoding path reconstructs from the compressed representation using transpose-convolution layers combined with skip connections. Skip connections preserve spatial information by concatenating low-level feature maps with high-level feature maps. 
 
 The *input* of the model is a grayscale image with shape `(1, 160, 160, 16)` (C, H, W, D). Since the objective is to make a prediction for a voxel belonging to a certain class, the output must contain 3 channels (`N_classes=3`: background, volume, spine). The channels correspond to the logits of a certain class. For the specific architecture refer to <a href="#3dunet">Fig. 1</a> and the model summary details below.
@@ -283,6 +285,7 @@ The performance of the trained segmentation model is evaluated on the test set. 
 #### Quantitative results
 For quantitative results we compute the Dice Similarity Score (DSC), two-sided Hausdorff Distance (HD) and its 95th percentile, precision and recall. The tabel below is an overview of the computed metrics (↑ higher is better, ↓ lower is better). The upper table is for the volume prediction and bottom for the spine.
 
+
 | |Filename	 |	Volume [L]|	DSC↑|  HD↓  |HD95↓     |	Precision| Recall |
 |-|-------------|-------------|--------|-------|----------|----------|--------| 
 |0|Volunteer 10 |10.10	     |0.891   |54.375 |27.188	   |0.828     |0.964   |
@@ -312,7 +315,10 @@ An example of the qualitative results are shown below. The segmentation correspo
 ### Postprocessing
 The trained segmentation model is used to make predictions about the corresponding segmentation mask. The output masks have physical gaps of roughly 20 mm (different per subject) between the slices along the inferior-superior axis and are upsampled such that there are no physical gaps in the mask, with the assumption that the slice thickness is 4 mm. A median filter is then applied to smoothen out rough edges. The resulting 3D view of volume and spine can be seen below.
 
-![mesh](visualization/V11_mesh.gif)
+<p align="center">
+  <img src="visualization/V11_mesh.gif" border=1px />
+</p>
+
 #### Chest volume
 To calculate the chest volume, we count the number of voxels corresponding to "volume" in our upsampled 3D mesh and multiply it with the physical volume of a single voxel. The results for calculated volumes are shown in the table above.
 

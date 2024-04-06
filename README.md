@@ -143,7 +143,7 @@ The config file is in `.json` file format and contains parameters used for data 
     "trainer": {    
         "batch_size": 1,                    // batch size
         "device": "cuda",                   // selected device for training
-        "epochs": 100,                      // number of epochs 
+        "epochs": 150,                      // number of epochs 
         "decay_lr_after": 100,              // lambda decay after epochs 
         "lr": 5e-4,                         // learning rate
         "loss_fn": "CrossEntropyLoss"       // loss function used for training
